@@ -1,0 +1,1428 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<meta charset='UTF-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0'>
+<title>Duracell DCL – Visitor Management System</title>
+<link href='https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500;600&family=Noto+Sans+SC:wght@300;400;500;700&display=swap' rel='stylesheet'>
+<style>
+  :root {
+    --copper:#B85A14; --gold:#E8920A; --gold-light:#FFB830;
+    --white:#FFFFFF; --green:#1E7E34; --red:#C0392B; --blue:#1C4A8C;
+    --page-bg:#FFF8F0; --card-bg:#FFFFFF; --card-border:#F0D9C0;
+    --header-bg:#FFFFFF; --header-border:#F0D9C0;
+    --text-main:#1A1008; --text-dim:#7A5830;
+    --accent-bg:#FFF3E0; --accent-mid:#FFE0B2;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Barlow','Noto Sans SC',sans-serif; background:var(--page-bg); color:var(--text-main); min-height:100vh; overflow-x:hidden; }
+  body.zh { font-family:'Noto Sans SC','Barlow',sans-serif; }
+
+  /* HEADER */
+  header { background:var(--header-bg); border-bottom:4px solid var(--gold); padding:14px 28px; display:flex; align-items:center; gap:16px; position:sticky; top:0; z-index:100; box-shadow:0 2px 12px rgba(200,101,26,.10); flex-wrap:wrap; border-top:4px solid var(--copper); }
+  .logo-badge { width:50px; height:50px; background:linear-gradient(135deg,var(--gold-light),var(--gold)); border-radius:10px; display:flex; align-items:center; justify-content:center; font-family:'Barlow Condensed',sans-serif; font-weight:800; font-size:20px; color:#fff; letter-spacing:-1px; flex-shrink:0; box-shadow:0 2px 8px rgba(200,101,26,.25); }
+  .header-titles h1 { font-family:'Barlow Condensed',sans-serif; font-weight:800; font-size:20px; color:var(--copper); letter-spacing:1px; }
+  .header-titles p { font-size:11px; color:var(--text-dim); letter-spacing:2px; text-transform:uppercase; }
+  .header-right { margin-left:auto; display:flex; align-items:center; gap:14px; }
+  .lang-toggle { display:flex; align-items:center; background:var(--accent-bg); border-radius:20px; overflow:hidden; border:1.5px solid var(--card-border); }
+  .lang-btn { padding:6px 14px; background:none; border:none; cursor:pointer; font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:13px; letter-spacing:1px; color:var(--text-dim); transition:all .2s; white-space:nowrap; }
+  .lang-btn.active { background:linear-gradient(135deg,var(--gold-light),var(--gold)); color:#fff; border-radius:18px; }
+  .step-tracker { display:flex; flex-direction:row; align-items:center; gap:6px; flex-wrap:nowrap; }
+  .step-dot { width:10px; height:10px; border-radius:50%; background:var(--accent-mid); transition:all .3s; }
+  .step-dot.active { background:var(--gold); box-shadow:0 0 8px rgba(232,146,10,.5); }
+  .step-dot.done { background:var(--green); }
+
+  /* SCREENS */
+  .screen { display:none; animation:fadeIn .4s ease; }
+  .screen.active { display:block; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+  .container { max-width:860px; margin:0 auto; padding:32px 24px; }
+
+  /* WELCOME */
+  .welcome-hero { text-align:center; padding:44px 0 28px; }
+  .welcome-hero .big-icon { font-size:60px; margin-bottom:14px; display:block; }
+  .welcome-hero h2 { font-family:'Barlow Condensed',sans-serif; font-weight:800; font-size:40px; color:var(--copper); letter-spacing:2px; line-height:1; text-transform:uppercase; }
+  body.zh .welcome-hero h2 { font-family:'Noto Sans SC',sans-serif; font-size:32px; letter-spacing:4px; }
+  .welcome-hero p { margin-top:12px; font-size:15px; color:var(--text-dim); max-width:520px; margin-left:auto; margin-right:auto; font-weight:500; }
+  .safety-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; margin:24px 0; }
+  .safety-card { background:var(--white); border:1px solid var(--card-border); border-top:3px solid var(--gold); border-radius:12px; padding:18px; transition:transform .2s,box-shadow .2s; box-shadow:0 1px 4px rgba(200,101,26,.06); }
+  .safety-card:hover { transform:translateY(-3px); box-shadow:0 6px 18px rgba(200,101,26,.13); border-top-color:var(--copper); }
+  .safety-card .icon { font-size:26px; margin-bottom:8px; display:block; }
+  .safety-card h4 { font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:14px; color:var(--copper); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; }
+  body.zh .safety-card h4 { font-family:'Noto Sans SC',sans-serif; font-size:13px; letter-spacing:2px; }
+  .safety-card ul { list-style:none; }
+  .safety-card ul li { font-size:12.5px; color:var(--text-dim); padding:3px 0 3px 14px; border-bottom:1px solid rgba(200,101,26,.08); position:relative; }
+  .safety-card ul li::before { content:'›'; position:absolute; left:0; color:var(--gold); font-weight:700; }
+  .disclaimer-box { background:#FFF8F0; border:1px solid rgba(200,101,26,.22); border-left:4px solid var(--gold); border-radius:0 10px 10px 0; padding:16px 20px; font-size:13px; color:#6B3E1A; margin-bottom:28px; display:flex; gap:12px; align-items:flex-start; }
+  .disclaimer-box .warn-icon { font-size:20px; flex-shrink:0; }
+
+  /* BUTTONS */
+  .btn { display:inline-flex; align-items:center; gap:8px; padding:13px 26px; border:none; border-radius:8px; font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:15px; letter-spacing:1px; text-transform:uppercase; cursor:pointer; transition:all .2s; }
+  body.zh .btn { font-family:'Noto Sans SC',sans-serif; letter-spacing:2px; font-size:13px; }
+  .btn-primary { background:linear-gradient(135deg,var(--gold-light),var(--gold)); color:#fff; box-shadow:0 4px 14px rgba(232,146,10,.35); }
+  .btn-primary:hover { transform:translateY(-2px); box-shadow:0 6px 22px rgba(232,146,10,.5); background:linear-gradient(135deg,var(--gold),var(--copper)); }
+  .btn-secondary { background:var(--white); color:var(--text-main); border:1.5px solid var(--card-border); }
+  .btn-secondary:hover { border-color:var(--copper); color:var(--copper); background:var(--accent-bg); }
+  .btn-success { background:var(--green); color:var(--white); }
+  .btn:disabled { opacity:.4; cursor:not-allowed; transform:none !important; }
+  .btn-row { display:flex; justify-content:center; gap:12px; flex-wrap:wrap; }
+
+  /* FORM */
+  .screen-title { font-family:'Barlow Condensed',sans-serif; font-weight:800; font-size:26px; color:var(--copper); text-transform:uppercase; letter-spacing:2px; margin-bottom:6px; display:flex; align-items:center; gap:12px; }
+  body.zh .screen-title { font-family:'Noto Sans SC',sans-serif; font-size:22px; letter-spacing:4px; }
+  .screen-sub { font-size:13px; color:var(--text-dim); margin-bottom:24px; font-weight:500; }
+  .form-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px; margin-bottom:20px; }
+  .form-group { display:flex; flex-direction:column; gap:6px; }
+  .form-group.full { grid-column:1/-1; }
+  label { font-size:11px; font-weight:600; color:var(--text-dim); letter-spacing:1.5px; text-transform:uppercase; }
+  body.zh label { letter-spacing:1px; font-size:11px; }
+  input,select,textarea { background:var(--white); border:1.5px solid var(--card-border); color:var(--text-main); border-radius:8px; padding:11px 13px; font-family:'Barlow','Noto Sans SC',sans-serif; font-size:14px; transition:border-color .2s; outline:none; }
+  input:focus,select:focus,textarea:focus { border-color:var(--copper); box-shadow:0 0 0 3px rgba(200,101,26,.1); }
+  select option { background:var(--white); color:var(--text-main); }
+  .checkbox-group { display:flex; flex-direction:column; gap:10px; margin-bottom:18px; }
+  .checkbox-item { display:flex; align-items:flex-start; gap:12px; background:var(--white); border:1.5px solid var(--card-border); border-radius:8px; padding:12px 14px; cursor:pointer; transition:all .2s; }
+  .checkbox-item:hover { border-color:var(--copper); background:var(--accent-bg); }
+  .checkbox-item input[type='checkbox'] { width:18px; height:18px; margin-top:2px; flex-shrink:0; accent-color:var(--copper); }
+  .checkbox-item span { font-size:13px; color:#5A3A18; line-height:1.6; }
+  .checkbox-item span b { color:var(--text-main); }
+
+  /* TRAINING */
+  .training-tabs { display:flex; gap:4px; margin-bottom:16px; background:var(--accent-mid); border-radius:10px; padding:4px; }
+  .tab-btn { flex:1; padding:10px 12px; background:none; border:none; border-radius:8px; font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:13px; letter-spacing:1px; text-transform:uppercase; cursor:pointer; color:var(--text-dim); transition:all .2s; }
+  body.zh .tab-btn { font-family:'Noto Sans SC',sans-serif; font-size:13px; letter-spacing:1px; }
+  .tab-btn.active { background:var(--copper); color:#fff; box-shadow:0 2px 8px rgba(200,101,26,.2); }
+  .training-panel { display:none; }
+  .training-panel.active { display:block; }
+  .video-player { background:var(--white); border:1px solid var(--card-border); border-radius:12px; padding:20px; text-align:center; margin-bottom:14px; box-shadow:0 1px 6px rgba(0,0,0,.06); }
+  .real-video { width:100%; display:block; background:#000; border:none; }
+  .video-watched-badge { display:inline-flex; align-items:center; gap:6px; background:rgba(42,122,59,.1); border:1px solid rgba(42,122,59,.3); color:#1A5C2A; border-radius:20px; padding:4px 12px; font-size:12px; font-weight:600; margin-bottom:8px; }
+  .progress-bar-wrap { background:var(--accent-mid); border-radius:20px; height:8px; overflow:hidden; margin-bottom:10px; }
+  .progress-bar-fill { height:100%; background:linear-gradient(90deg,var(--copper),var(--gold)); border-radius:20px; transition:width .3s; }
+  .video-chapters { display:flex; flex-direction:column; gap:8px; }
+  .chapter-item { display:flex; align-items:center; gap:12px; padding:10px 14px; background:var(--accent-bg); border:1.5px solid var(--card-border); border-radius:8px; cursor:pointer; transition:all .2s; }
+  .chapter-item:hover { border-color:var(--copper); background:var(--white); }
+  .chapter-item.done { border-color:var(--green); background:rgba(42,122,59,.04); }
+  .chapter-num { width:28px; height:28px; background:var(--accent-mid); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0; color:var(--text-dim); }
+  .chapter-item.done .chapter-num { background:var(--green); color:var(--white); }
+  .chapter-duration { margin-left:auto; font-size:12px; color:var(--text-dim); flex-shrink:0; }
+  .slide-viewer { background:var(--white); border:1px solid var(--card-border); border-radius:12px; overflow:hidden; margin-bottom:14px; box-shadow:0 1px 6px rgba(0,0,0,.06); }
+  .slide-frame { min-height:300px; display:flex; align-items:center; justify-content:center; padding:28px; }
+  .slide-content { max-width:600px; width:100%; text-align:left; }
+  .slide-number { font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:2px; margin-bottom:10px; font-weight:600; }
+  .slide-heading { font-family:'Barlow Condensed',sans-serif; font-weight:800; font-size:28px; color:var(--copper); text-transform:uppercase; letter-spacing:1px; margin-bottom:14px; }
+  body.zh .slide-heading { font-family:'Noto Sans SC',sans-serif; font-size:20px; letter-spacing:3px; }
+  .slide-body { font-size:14px; color:var(--text-main); line-height:1.9; }
+  .slide-body ul { list-style:none; display:flex; flex-direction:column; gap:8px; }
+  .slide-body ul li { padding-left:20px; position:relative; }
+  .slide-body ul li::before { content:'◆'; position:absolute; left:0; color:var(--copper); font-size:10px; top:5px; }
+  .slide-nav { display:flex; align-items:center; justify-content:space-between; padding:12px 18px; background:var(--accent-bg); border-top:1px solid var(--card-border); }
+  .slide-dots { display:flex; gap:6px; }
+  .slide-dot { width:8px; height:8px; border-radius:50%; background:var(--accent-mid); cursor:pointer; transition:background .2s; }
+  .slide-dot.active { background:var(--copper); }
+  .slide-dot.seen { background:var(--gold); opacity:.7; }
+
+  /* EXAM */
+  .exam-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; gap:14px; flex-wrap:wrap; }
+  .exam-progress { flex:1; background:var(--white); border:1px solid var(--card-border); border-radius:10px; padding:12px 16px; box-shadow:0 1px 6px rgba(0,0,0,.06); }
+  .exam-progress-label { font-size:12px; color:var(--text-dim); margin-bottom:6px; text-transform:uppercase; letter-spacing:1px; font-weight:600; }
+  .timer-chip { background:var(--white); border:1.5px solid var(--card-border); border-radius:20px; padding:6px 16px; font-family:'Barlow Condensed',sans-serif; font-size:18px; font-weight:700; color:var(--copper); display:inline-flex; align-items:center; gap:6px; box-shadow:0 1px 6px rgba(0,0,0,.06); }
+  .question-card { background:var(--white); border:1px solid var(--card-border); border-left:4px solid var(--copper); border-radius:12px; padding:22px; margin-bottom:18px; box-shadow:0 1px 6px rgba(0,0,0,.06); }
+  .question-num { font-size:11px; color:var(--copper); text-transform:uppercase; letter-spacing:2px; margin-bottom:8px; font-weight:700; }
+  .question-text { font-size:15px; font-weight:600; color:var(--text-main); margin-bottom:16px; line-height:1.7; }
+  .options { display:flex; flex-direction:column; gap:8px; }
+  .option-btn { padding:11px 15px; background:var(--accent-bg); border:1.5px solid var(--card-border); border-radius:8px; cursor:pointer; font-family:'Barlow','Noto Sans SC',sans-serif; font-size:14px; color:var(--text-main); text-align:left; transition:all .2s; display:flex; align-items:center; gap:10px; }
+  .option-btn:hover { border-color:var(--copper); background:var(--white); }
+  .option-btn.selected { border-color:var(--copper); background:#FFF0DF; color:var(--copper); font-weight:600; }
+  .option-btn.correct { border-color:var(--green); background:rgba(42,122,59,.08); color:#1A5C2A; font-weight:600; }
+  .option-btn.wrong { border-color:var(--red); background:rgba(176,36,28,.07); color:#8B1A14; }
+  .option-letter { width:25px; height:25px; border-radius:50%; background:var(--accent-mid); color:var(--text-dim); flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; font-family:'Barlow Condensed',sans-serif; }
+  .score-display { text-align:center; padding:44px 22px; }
+  .score-circle { width:136px; height:136px; border-radius:50%; margin:0 auto 22px; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:'Barlow Condensed',sans-serif; }
+  .score-circle.pass { background:radial-gradient(circle,rgba(42,122,59,.12),rgba(42,122,59,.04)); border:4px solid var(--green); box-shadow:0 0 24px rgba(42,122,59,.15); }
+  .score-circle.fail { background:radial-gradient(circle,rgba(176,36,28,.1),rgba(176,36,28,.03)); border:4px solid var(--red); box-shadow:0 0 24px rgba(176,36,28,.12); }
+  .score-num { font-size:50px; font-weight:800; line-height:1; }
+  .score-label { font-size:13px; color:var(--text-dim); letter-spacing:2px; }
+
+  /* ONBOARD */
+  .onboard-card { background:var(--white); border:2px solid var(--green); border-radius:16px; padding:30px; text-align:center; position:relative; overflow:hidden; box-shadow:0 4px 20px rgba(42,122,59,.08); }
+  .onboard-card::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse at top,rgba(42,122,59,.05),transparent 60%); pointer-events:none; }
+  .onboard-badge { width:76px; height:76px; background:linear-gradient(135deg,var(--green),#4ABA6A); border-radius:50%; margin:0 auto 18px; display:flex; align-items:center; justify-content:center; font-size:34px; box-shadow:0 4px 20px rgba(42,122,59,.25); }
+  .visitor-pass { background:linear-gradient(135deg,#FFFDF8,#FFF3E0); border:2px solid var(--gold); border-radius:12px; padding:22px; margin:20px auto; max-width:380px; position:relative; box-shadow:0 2px 12px rgba(232,146,10,.12); }
+  .visitor-pass::after { content:'DURACELL DCL'; position:absolute; top:8px; right:12px; font-family:'Barlow Condensed',sans-serif; font-size:10px; font-weight:800; letter-spacing:2px; color:var(--gold); opacity:.4; }
+  .pass-photo { width:68px; height:68px; background:var(--accent-mid); border-radius:50%; margin:0 auto 10px; display:flex; align-items:center; justify-content:center; font-size:26px; border:2px solid var(--gold); }
+  .pass-name { font-family:'Barlow Condensed',sans-serif; font-size:24px; font-weight:800; color:var(--copper); letter-spacing:1px; }
+  .pass-details { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px; text-align:left; }
+  .pass-field label, .pass-label { font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:1px; display:block; }
+  .pass-field span { font-size:13px; color:var(--text-main); font-weight:600; }
+  .pass-qr { width:58px; height:58px; background:var(--white); border-radius:6px; margin:14px auto 0; display:grid; grid-template-columns:repeat(7,1fr); gap:2px; padding:5px; border:1px solid var(--card-border); }
+  .qr-cell { background:var(--text-main); border-radius:1px; }
+  .qr-cell.w { background:transparent; }
+
+  /* ALERTS */
+  .alert { padding:13px 16px; border-radius:10px; margin-bottom:14px; font-size:13px; display:flex; gap:10px; align-items:flex-start; }
+  .alert-info { background:rgba(28,74,140,.06); border:1px solid rgba(28,74,140,.16); color:#1C3A7A; }
+  .alert-warn { background:rgba(200,101,26,.07); border:1px solid rgba(200,101,26,.22); color:#7A3A10; }
+  .alert-success { background:rgba(42,122,59,.07); border:1px solid rgba(42,122,59,.22); color:#1A5C2A; }
+  .divider { height:1px; background:var(--card-border); margin:20px 0; }
+  input.error,select.error { border-color:var(--red); box-shadow:0 0 0 3px rgba(176,36,28,.1); }
+  .field-error { color:var(--red); font-size:12px; margin-top:2px; }
+
+  .video-wrap { position:relative; background:#000; border-radius:8px; overflow:hidden; margin-bottom:12px; width:100%; aspect-ratio:16/9; }
+  .video-wrap video { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; display:block; }
+  .video-ctrl { display:none; }
+  .vc-playbtn { width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg,#FFB830,#E8920A); border:none; cursor:pointer; flex-shrink:0; font-size:14px; color:#fff; display:flex; align-items:center; justify-content:center; transition:transform .15s; }
+  .vc-playbtn:hover { transform:scale(1.1); }
+  .vc-time { font-size:12px; color:#e0c090; font-family:'Barlow Condensed',sans-serif; white-space:nowrap; min-width:90px; }
+  .vc-bar-wrap { flex:1; height:6px; background:rgba(255,255,255,.15); border-radius:3px; cursor:default; }
+  .vc-bar-fill { height:100%; background:linear-gradient(90deg,#E8920A,#FFB830); border-radius:3px; transition:width .3s linear; pointer-events:none; }
+
+  /* ── TABLET (≤768px) ── */
+  @media(max-width:768px){
+    .container { max-width:100%; padding:24px 18px; }
+    .safety-grid { grid-template-columns:repeat(2,1fr); }
+    .form-grid { grid-template-columns:1fr; }
+    .form-group.full { grid-column:1; }
+    .slide-heading { font-size:22px; }
+    .slide-body { font-size:13px; }
+    .score-display { padding:28px 14px; }
+    .visitor-pass { max-width:100%; }
+    .pass-details { grid-template-columns:1fr 1fr; }
+    .exam-header { flex-direction:column; align-items:stretch; }
+    .timer-chip { align-self:flex-end; }
+    .onboard-card { padding:20px 16px; }
+    .training-tabs { flex-direction:row; }
+    .tab-btn { font-size:12px; padding:9px 8px; }
+    .question-text { font-size:14px; }
+    .option-btn { font-size:13px; padding:10px 12px; }
+  }
+
+  /* ── MOBILE (≤480px) ── */
+  @media(max-width:480px){
+    header { padding:10px 12px; gap:10px; border-top-width:3px; border-bottom-width:3px; }
+    .logo-badge { width:40px; height:40px; font-size:16px; }
+    .header-titles h1 { font-size:16px; }
+    .header-titles p { display:none; }
+    .header-right { gap:6px; }
+    .lang-btn { padding:5px 9px; font-size:11px; }
+    .step-dot { width:8px; height:8px; }
+    .container { padding:16px 12px; }
+
+    /* Welcome */
+    .welcome-hero { padding:24px 0 16px; }
+    .welcome-hero .big-icon { font-size:44px; margin-bottom:10px; }
+    .welcome-hero h2 { font-size:22px; letter-spacing:1px; }
+    body.zh .welcome-hero h2 { font-size:18px; }
+    .welcome-hero p { font-size:13px; }
+    .safety-grid { grid-template-columns:1fr; gap:10px; }
+    .safety-card { padding:14px; }
+    .disclaimer-box { font-size:12px; padding:12px 14px; }
+
+    /* Buttons */
+    .btn { padding:11px 18px; font-size:13px; }
+    .btn-row { flex-direction:column; align-items:stretch; }
+    .btn-row .btn { text-align:center; justify-content:center; }
+
+    /* Form */
+    .screen-title { font-size:20px; }
+    body.zh .screen-title { font-size:17px; }
+    .form-grid { gap:12px; }
+    input, select, textarea { padding:10px 11px; font-size:13px; }
+    label { font-size:10px; }
+    .checkbox-item { padding:10px 11px; }
+    .checkbox-item span { font-size:12px; }
+    .divider { margin:16px 0; }
+
+    /* Training */
+    .training-tabs { gap:3px; padding:3px; }
+    .tab-btn { font-size:11px; padding:8px 6px; letter-spacing:0; }
+    body.zh .tab-btn { font-size:11px; }
+    .video-player { padding:12px; }
+    .video-ctrl { padding:6px 8px; gap:6px; }
+    .vc-time { font-size:11px; min-width:70px; }
+    .vc-playbtn { width:28px; height:28px; font-size:12px; }
+    .slide-frame { padding:16px; min-height:240px; }
+    .slide-heading { font-size:18px; }
+    body.zh .slide-heading { font-size:15px; }
+    .slide-body { font-size:12.5px; }
+    .slide-nav { padding:10px 12px; }
+
+    /* Exam */
+    .exam-header { gap:8px; }
+    .exam-progress { padding:10px 12px; }
+    .timer-chip { font-size:15px; padding:5px 12px; }
+    .question-card { padding:16px; }
+    .question-num { font-size:10px; }
+    .question-text { font-size:13px; }
+    .option-btn { padding:9px 10px; font-size:12px; gap:8px; }
+    .option-letter { width:22px; height:22px; font-size:11px; }
+    .score-display { padding:20px 10px; }
+    .score-circle { width:110px; height:110px; }
+    .score-num { font-size:38px; }
+
+    /* Onboard / Pass */
+    .onboard-card { padding:16px 12px; }
+    .onboard-badge { width:60px; height:60px; font-size:26px; }
+    .visitor-pass { padding:16px; margin:14px auto; }
+    .pass-name { font-size:20px; }
+    .pass-details { grid-template-columns:1fr 1fr; gap:8px; }
+    .pass-field label { font-size:9px; }
+    .pass-field span { font-size:12px; }
+  }
+
+  /* ── VERY SMALL (≤360px) ── */
+  @media(max-width:360px){
+    .welcome-hero h2 { font-size:19px; }
+    .pass-details { grid-template-columns:1fr; }
+    .safety-card h4 { font-size:12px; }
+    .btn { font-size:12px; padding:10px 14px; }
+    .training-tabs { flex-direction:column; }
+  }
+
+  .onboard-heading { font-family:'Barlow Condensed',sans-serif; font-size:26px; color:var(--gold); letter-spacing:2px; text-transform:uppercase; margin-bottom:6px; }
+  body.zh .onboard-heading { font-family:'Noto Sans SC',sans-serif; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class='logo-badge'>DCL</div>
+  <div class='header-titles'>
+    <h1 data-i18n='header_title'>Duracell DCL</h1>
+    <p data-i18n='header_sub'>Visitor Management System</p>
+  </div>
+  <div class='header-right'>
+    <div class='lang-toggle'>
+      <button class='lang-btn active' id='btnEN' onclick='setLangEN()'>EN</button>
+      <button class='lang-btn' id='btnZH' onclick='setLangZH()'>中文</button>
+    </div>
+    <div class='step-tracker'>
+      <div class='step-dot active' id='dot0'></div>
+      <div class='step-dot' id='dot1'></div>
+      <div class='step-dot' id='dot2'></div>
+      <div class='step-dot' id='dot3'></div>
+      <div class='step-dot' id='dot4'></div>
+    </div>
+  </div>
+</header>
+
+<!-- SCREEN 0: WELCOME -->
+<div class='screen active' id='screen-0'>
+<div class='container'>
+  <div class='welcome-hero'>
+    <h2 data-i18n='welcome_title'>Welcome to Duracell DCL</h2>
+    <p data-i18n='welcome_sub'>Before entering our facility, please complete this visitor registration and safety induction process.</p>
+  </div>
+  <div class='safety-grid'>
+    <div class='safety-card'><span class='icon'>🦺</span><h4 data-i18n='sc1_title'>PPE Requirements</h4><ul id='sc1_list'></ul></div>
+    <div class='safety-card'><span class='icon'>🚨</span><h4 data-i18n='sc2_title'>Emergency Procedures</h4><ul id='sc2_list'></ul></div>
+    <div class='safety-card'><span class='icon'>⚗️</span><h4 data-i18n='sc3_title'>Chemical & Battery Hazards</h4><ul id='sc3_list'></ul></div>
+    <div class='safety-card'><span class='icon'>📋</span><h4 data-i18n='sc4_title'>Site Rules</h4><ul id='sc4_list'></ul></div>
+    <div class='safety-card'><span class='icon'>⚡</span><h4 data-i18n='sc5_title'>Electrical Safety</h4><ul id='sc5_list'></ul></div>
+    <div class='safety-card'><span class='icon'>🏥</span><h4 data-i18n='sc6_title'>First Aid & Medical</h4><ul id='sc6_list'></ul></div>
+  </div>
+  <div class='disclaimer-box'>
+    <span class='warn-icon'>⚠️</span>
+    <div data-i18n='disclaimer'></div>
+  </div>
+  <div class='btn-row'>
+    <button class='btn btn-primary' onclick='goTo(1)' data-i18n='btn_begin_reg'>Begin Registration →</button>
+  </div>
+</div>
+</div>
+
+<!-- SCREEN 1: REGISTRATION -->
+<div class='screen' id='screen-1'>
+<div class='container'>
+  <div class='screen-title'>📝 <span data-i18n='reg_title'>Visitor Registration</span></div>
+  <div class='screen-sub' data-i18n='reg_sub'>Please complete all fields accurately.</div>
+  <div class='form-grid'>
+    <div class='form-group'><label for='fFullName' data-i18n='lbl_name'>Name of Visitor *</label><input type='text' id='fFullName' data-i18n-ph='ph_name'><span class='field-error' id='err-fullName'></span></div>
+    <div class='form-group'><label for='fEmergency' data-i18n='lbl_emergency'>Emergency Contact *</label><input type='text' id='fEmergency' data-i18n-ph='ph_emergency'><span class='field-error' id='err-emergency'></span></div>
+    <div class='form-group'><label for='fIdNum' data-i18n='lbl_id'>ID / Passport *</label><input type='text' id='fIdNum' data-i18n-ph='ph_id'><span class='field-error' id='err-idNum'></span></div>
+    <div class='form-group'><label for='fCompany' data-i18n='lbl_company'>Company *</label><input type='text' id='fCompany' data-i18n-ph='ph_company'><span class='field-error' id='err-company'></span></div>
+    <div class='form-group'><label for='fEmail' data-i18n='lbl_email'>Email *</label><input type='email' id='fEmail' placeholder='name@company.com'><span class='field-error' id='err-email'></span></div>
+    <div class='form-group'><label for='fPhone' data-i18n='lbl_phone'>Phone *</label><input type='tel' id='fPhone' placeholder='+86 / +1 ...'><span class='field-error' id='err-phone'></span></div>
+    <div class='form-group'><label for='fVehicle' data-i18n='lbl_vehicle'>Vehicle Plate</label><input type='text' id='fVehicle' data-i18n-ph='ph_vehicle'></div>
+    <div class='form-group'><label for='fDate' data-i18n='lbl_date'>Visit Date *</label><input type='date' id='fDate'><span class='field-error' id='err-date'></span></div>
+    <div class='form-group'>
+      <label for='fPurpose' data-i18n='lbl_purpose'>Purpose *</label>
+      <select id='fPurpose'>
+        <option value='' data-i18n='opt_select'>— Select —</option>
+        <option data-i18n='opt_p1'>Supplier / Vendor Delivery</option>
+        <option data-i18n='opt_p2'>Contractor / Maintenance</option>
+        <option data-i18n='opt_p3'>Audit / Inspection</option>
+        <option data-i18n='opt_p4'>Business Meeting</option>
+        <option data-i18n='opt_p5'>Customer / Partner Tour</option>
+        <option data-i18n='opt_p6'>Government / Regulatory</option>
+        <option data-i18n='opt_p7'>Other</option>
+      </select>
+      <span class='field-error' id='err-purpose'></span>
+    </div>
+    <div class='form-group'><label for='fHost' data-i18n='lbl_host'>DCL Host *</label><input type='text' id='fHost' data-i18n-ph='ph_host'><span class='field-error' id='err-host'></span></div>
+    <div class='form-group'>
+      <label for='fDept' data-i18n='lbl_dept'>Department</label>
+      <select id='fDept'>
+        <option value='' data-i18n='opt_select'>— Select —</option>
+        <option data-i18n='opt_d1'>Manufacturing / Production</option>
+        <option data-i18n='opt_d2'>Quality Assurance</option>
+        <option data-i18n='opt_d3'>Warehouse / Logistics</option>
+        <option data-i18n='opt_d4'>Engineering</option>
+        <option data-i18n='opt_d5'>EHS</option>
+        <option data-i18n='opt_d6'>Administration / HR</option>
+        <option data-i18n='opt_d7'>R&D / Laboratory</option>
+        <option data-i18n='opt_d8'>Executive / Management</option>
+      </select>
+    </div>
+    <div class='form-group'><label for='fHealth' data-i18n='lbl_health'>Health Conditions</label><input type='text' id='fHealth' data-i18n-ph='ph_health'></div>
+  </div>
+  <div class='divider'></div>
+  <div style='margin-bottom:10px;font-size:11px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px' data-i18n='ack_heading'>Safety Acknowledgements</div>
+  <div class='checkbox-group'>
+    <label class='checkbox-item'><input type='checkbox' id='ack1'><span data-i18n='ack1'></span></label>
+    <label class='checkbox-item'><input type='checkbox' id='ack2'><span data-i18n='ack2'></span></label>
+    <label class='checkbox-item'><input type='checkbox' id='ack3'><span data-i18n='ack3'></span></label>
+    <label class='checkbox-item'><input type='checkbox' id='ack4'><span data-i18n='ack4'></span></label>
+  </div>
+  <div id='form-alert' class='alert alert-warn' style='display:none'><span>⚠️</span><span id='form-alert-msg'></span></div>
+  <div class='btn-row'>
+    <button class='btn btn-secondary' onclick='goTo(0)' data-i18n='btn_back'>← Back</button>
+    <button class='btn btn-primary' onclick='submitForm()' data-i18n='btn_save_continue'>Save & Continue →</button>
+  </div>
+</div>
+</div>
+
+<!-- SCREEN 2: TRAINING -->
+<div class='screen' id='screen-2'>
+<div class='container'>
+  <div class='screen-title'>🎓 <span data-i18n='train_title'>Safety Training</span></div>
+  <div class='screen-sub' data-i18n='train_sub'>Complete the video training or review the slides before the exam.</div>
+  <div class='alert alert-info' style='margin-bottom:16px'><span>ℹ️</span><span data-i18n='train_info'></span></div>
+
+  <!-- VIDEO -->
+  <div class='training-panel active' id='panel-video'>
+    <div class='video-player'>
+      <div class='video-wrap'>
+      <video id='realVideo' class='real-video' onratechange='lockPlaybackRate()' onseeking='preventSeek()' onseeked='preventSeek()'
+        src='https://raw.githubusercontent.com/benbfm/DCL-HSE-Training/main/HSE.mp4'
+        onloadedmetadata='onVideoLoaded()'
+        ontimeupdate='onVideoProgress()'
+        onended='onVideoEnded()'>
+        Your browser does not support the video tag.
+      </video>
+      </div><!-- /video-wrap -->
+      <!-- Custom controls — no draggable progress bar -->
+      <div class='video-ctrl'>
+        <button class='vc-playbtn' id='vcPlayBtn' onclick='toggleVideoPlay()'>▶</button>
+        <div class='vc-time'><span id='videoTime'>0:00</span> / <span id='videoDuration'>--:--</span></div>
+        <div class='vc-bar-wrap'><div class='vc-bar-fill' id='videoProgress' style='width:0%'></div></div>
+      </div>
+      <div id='videoWatchedBadge' style='display:none' class='video-watched-badge'>✅ <span data-i18n='train_done'>Training complete!</span></div>
+    </div>
+
+  </div>
+  <!-- SLIDES -->
+  <div class='training-panel' id='panel-slides'>
+    <div class='slide-viewer'>
+      <div class='slide-frame' id='slideFrame'></div>
+      <div class='slide-nav'>
+        <button class='btn btn-secondary' style='padding:7px 14px;font-size:13px' onclick='prevSlide()' data-i18n='btn_prev_slide'>← Prev</button>
+        <div class='slide-dots' id='slideDots'></div>
+        <button class='btn btn-secondary' style='padding:7px 14px;font-size:13px' onclick='nextSlide()' data-i18n='btn_next_slide'>Next →</button>
+      </div>
+    </div>
+  </div>
+  <div class='divider'></div>
+  <div id='training-status' class='alert alert-warn'><span>⏳</span><span data-i18n='train_pending'>Please complete the training before proceeding to the exam.</span></div>
+  <div class='btn-row'>
+    <button class='btn btn-secondary' onclick='goTo(1)' data-i18n='btn_back'>← Back</button>
+    <button class='btn btn-primary' id='btnToExam' disabled onclick='goTo(3)' data-i18n='btn_to_exam'>Proceed to Exam →</button>
+  </div>
+</div>
+</div>
+
+<!-- SCREEN 3: EXAM -->
+<div class='screen' id='screen-3'>
+<div class='container'>
+  <div class='screen-title'>📋 <span data-i18n='exam_title'>Safety Knowledge Exam</span></div>
+  <div class='screen-sub' id='examAttemptLabel'></div>
+  <div class='exam-header'>
+    <div class='exam-progress'>
+      <div class='exam-progress-label'><span data-i18n='exam_progress_label'>Progress:</span> <span id='examProgressLabel'>0 / 10</span></div>
+      <div class='progress-bar-wrap' style='margin:0'><div class='progress-bar-fill' id='examProgressBar' style='width:0%'></div></div>
+    </div>
+    <div class='timer-chip'>⏱ <span id='examTimer'>20:00</span></div>
+  </div>
+  <div id='questionArea'></div>
+  <div id='examNav' style='display:none'>
+    <div class='btn-row'>
+      <button class='btn btn-secondary' id='btnPrevQ' onclick='prevQuestion()' data-i18n='btn_prev_q'>← Previous</button>
+      <button class='btn btn-primary' id='btnNextQ' onclick='nextQuestion()' data-i18n='btn_next_q'>Next →</button>
+      <button class='btn btn-success' id='btnSubmitExam' style='display:none' onclick='submitExam()' data-i18n='btn_submit_exam'>Submit Exam ✓</button>
+    </div>
+  </div>
+  <div id='scorePanel' style='display:none'></div>
+</div>
+</div>
+
+<!-- SCREEN 4: ONBOARD -->
+<div class='screen' id='screen-4'>
+<div class='container'>
+  <div class='screen-title'>✅ <span data-i18n='onboard_title'>Visitor Onboarding</span></div>
+  <div class='screen-sub' data-i18n='onboard_sub'>Welcome aboard! Your registration is complete.</div>
+  <div class='onboard-card'>
+    <div class='onboard-badge'>✓</div>
+    <h3 class='onboard-heading' data-i18n='induction_complete'>Induction Complete!</h3>
+    <p style='color:var(--text-dim);margin:8px 0 18px;font-size:14px' data-i18n='induction_desc'>You have successfully completed the Duracell DCL visitor safety induction.</p>
+    <div class='visitor-pass'>
+      <div class='pass-photo'>👤</div>
+      <div class='pass-name' id='passName'>VISITOR NAME</div>
+      <div style='font-size:12px;color:var(--text-dim);margin-top:2px' id='passCompany'>Company</div>
+      <div class='pass-details'>
+        <div class='pass-field'><span class='pass-label' data-i18n='pass_badge_type'>Badge Type</span><span>🟡 <span data-i18n='pass_visitor'>Visitor</span></span></div>
+        <div class='pass-field'><span class='pass-label' data-i18n='pass_valid'>Valid Until</span><span id='passValidUntil'>—</span></div>
+        <div class='pass-field'><span class='pass-label' data-i18n='pass_date'>Visit Date</span><span id='passDate'>—</span></div>
+        <div class='pass-field'><span class='pass-label' data-i18n='pass_score'>Exam Score</span><span id='passScore' style='color:var(--green)'>—</span></div>
+        <div class='pass-field'><span class='pass-label' data-i18n='pass_purpose'>Purpose</span><span id='passPurpose'>—</span></div>
+        <div class='pass-field'><span class='pass-label' data-i18n='pass_host'>Host</span><span id='passHost'>—</span></div>
+      </div>
+      <div class='pass-qr' id='passQR'></div>
+    </div>
+    <div class='alert alert-success' style='max-width:480px;margin:0 auto 18px;text-align:left'><span>✅</span><div id='nextStepsText'></div></div>
+    <div class='btn-row'>
+      <button class='btn btn-secondary' onclick='printPass()' data-i18n='btn_print'>🖨 Print Pass</button>
+      <button class='btn btn-primary' onclick='startNew()' data-i18n='btn_new_visitor'>Register New Visitor →</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// TRANSLATION DICTIONARY
+// ═══════════════════════════════════════════════
+const T = {
+en:{
+  header_title:'Duracell DCL', header_sub:'Visitor Management System',
+  welcome_title:'Welcome to Duracell DCL',
+  welcome_sub:'Before entering our facility, please complete this visitor registration and safety induction process.',
+  sc1_title:'PPE Requirements', sc2_title:'Emergency Procedures',
+  sc3_title:'Chemical & Battery Hazards', sc4_title:'Site Rules',
+  sc5_title:'Electrical Safety', sc6_title:'First Aid & Medical',
+  sc1_items:['Safety glasses / goggles mandatory','Safety shoes (steel-toe) required','Hi-vis vest in production areas','Hard hat in designated zones','Chemical-resistant gloves near batteries','No loose clothing or jewellery'],
+  sc2_items:['Know your nearest emergency exit','Assembly point: Car Park A (North)','Emergency: ext. 999 / 0800-DCL','Fire extinguishers at all corridors','Do not use elevators during evacuation','Follow escort instructions at all times'],
+  sc3_items:['Potassium hydroxide – corrosive electrolyte','Manganese compounds – inhalation risk','Do not short-circuit any battery','Report leaking batteries immediately','No open flames near battery storage','SDS sheets at every workstation'],
+  sc4_items:['Visitor badge visible at all times','Escort required in restricted areas','No photography without written approval','No smoking except designated zones','Mobile phones off on production floors','Report all incidents to site supervisor'],
+  sc5_items:['Do not touch electrical panels','Keep clear of energised equipment','Arc flash zones are clearly marked','EH-rated footwear in electrical areas','Only licensed electricians on live work','LOTO programme enforced site-wide'],
+  sc6_items:['First aid kits at all zone entrances','Eye wash stations near battery areas','Battery acid contact – flush 15 min','Report all injuries immediately','Nearest hospital: DCL Medical Centre','AED defibrillators on every floor'],
+  disclaimer:`<strong style='color:#E8920A'>Important Notice:</strong> By proceeding, you acknowledge that you will comply with all Duracell DCL site safety requirements and EHS policies. Failure to comply may result in immediate removal from the premises. This induction is valid for <strong>30 days</strong> from the date of registration.`,
+  btn_begin_reg:'Begin Registration →',
+  reg_title:'Visitor Registration',
+  reg_sub:'Please complete all fields accurately. This information is required for site security and emergency purposes.',
+  lbl_name:'Name of Visitor *', ph_name:'e.g. John Smith',
+  lbl_id:'ID / Passport Number *', ph_id:'e.g. A1234567',
+  lbl_company:'Company / Organisation *', ph_company:'e.g. ABC Logistics Ltd.',
+  lbl_email:'Email Address *', lbl_phone:'Mobile / Contact Number *',
+  lbl_vehicle:'Vehicle Plate (if applicable)', ph_vehicle:'e.g. AB12 CDE',
+  lbl_date:'Visit Date *',
+  lbl_purpose:'Purpose of Visit *',
+  lbl_host:'DCL Host / Contact Person *', ph_host:'Name of person you are visiting',
+  lbl_dept:'Department to Visit',
+  lbl_health:'Special Health Conditions', ph_health:'e.g. asthma, latex allergy (optional)',
+  lbl_emergency:'Emergency Contact Name & Number *', ph_emergency:'e.g. Jane Smith – +1 555 111 2222',
+  opt_select:'— Select —',
+  opt_p1:'Supplier / Vendor Delivery', opt_p2:'Contractor / Maintenance',
+  opt_p3:'Audit / Inspection', opt_p4:'Business Meeting',
+  opt_p5:'Customer / Partner Tour', opt_p6:'Government / Regulatory', opt_p7:'Other',
+  opt_d1:'Manufacturing / Production', opt_d2:'Quality Assurance',
+  opt_d3:'Warehouse / Logistics', opt_d4:'Engineering',
+  opt_d5:'EHS (Environment, Health & Safety)', opt_d6:'Administration / HR',
+  opt_d7:'R&D / Laboratory', opt_d8:'Executive / Management',
+  ack_heading:'Safety Acknowledgements',
+  ack1:'I have read and understood the <b>site safety rules and PPE requirements</b> on the Welcome screen.',
+  ack2:'I agree to wear the required <b>Personal Protective Equipment (PPE)</b> at all times in production and restricted areas.',
+  ack3:'I understand I must be <b>accompanied by a DCL host</b> at all times in restricted areas.',
+  ack4:'I agree to comply with all <b>EHS policies and emergency procedures</b> and follow instructions from DCL safety personnel.',
+  btn_back:'← Back', btn_save_continue:'Save & Continue →',
+  err_name:'Visitor name is required',
+  err_id:'ID / Passport number is required', err_company:'Company is required',
+  err_email:'Valid email is required', err_email_fmt:'Invalid email format',
+  err_phone:'Phone number is required', err_date:'Visit date is required',
+  err_purpose:'Purpose of visit is required', err_host:'Host name is required',
+  err_emergency:'Emergency contact is required', err_ack:'Please accept all safety acknowledgements',
+  train_title:'Safety Training',
+  train_sub:'Complete the video training or review the presentation slides. Finish at least one before proceeding to the exam.',
+  train_info:'Training material is based on Duracell DCL EHS induction requirements. Please give full attention — exam questions are drawn from this content.',
+  tab_video:'▶ Video Training', tab_slides:'📄 Slide Presentation',
+  video_total:'Total: ~14 min', video_chapters:'Video Chapters',
+  video_chapter_prefix:'DCL Safety Induction – Chapter',
+  video_watch_note:'Watch at least 80% of the video to unlock the exam. You may also use the Slides tab instead.',
+  ch0_title:'Site Overview & Visitor Rules', ch1_title:'PPE Requirements & Usage',
+  ch2_title:'Battery Chemical Hazards & SDS', ch3_title:'Emergency Procedures & Evacuation',
+  ch4_title:'Electrical Safety & LOTO',
+  btn_prev_slide:'← Prev', btn_next_slide:'Next →',
+  train_pending:'Please complete the training before proceeding to the exam.',
+  train_done:'Training complete! You may now proceed to the exam.',
+  btn_to_exam:'Proceed to Exam →',
+  exam_title:'Safety Knowledge Exam',
+  exam_attempt_label:'Attempt #{n} — Questions selected randomly. Score ≥ 80% to pass.',
+  exam_progress_label:'Progress:',
+  btn_prev_q:'← Previous', btn_next_q:'Next →', btn_submit_exam:'Submit Exam ✓',
+  question_of:'Question {a} of {b}',
+  unanswered_confirm:'{n} unanswered question(s). Submit anyway?',
+  no_answer:'(no answer)', your_answer:'Your answer:', correct_answer:'Correct:',
+  question_review:'Question Review',
+  score_passed:'PASSED', score_failed:'FAILED',
+  score_congrats:'🎉 Congratulations!', score_fail_msg:'⚠️ Not Quite There',
+  score_pass_detail:'You answered {c} out of {t} correctly. You may now complete your visitor onboarding.',
+  score_fail_detail:'You answered {c} out of {t} correctly. A score of 80% or above is required. Please review the training material and try again.',
+  btn_complete_onboard:'Complete Onboarding →',
+  btn_restudy:'📖 Re-study Training', btn_retake:'🔄 Retake Exam',
+  onboard_title:'Visitor Onboarding',
+  onboard_sub:'Welcome aboard! Your registration is complete. Please collect your visitor badge from reception.',
+  induction_complete:'Induction Complete!',
+  induction_desc:'You have successfully completed the Duracell DCL visitor safety induction.',
+  pass_badge_type:'Badge Type', pass_visitor:'Visitor',
+  pass_valid:'Valid Until', pass_date:'Visit Date',
+  pass_score:'Exam Score', pass_purpose:'Purpose', pass_host:'Host',
+  next_steps:'<strong>Next Steps:</strong><br>1. Present this screen to the security desk<br>2. Collect your visitor badge & PPE kit<br>3. Wait for your DCL host in reception<br>4. Do not enter restricted areas without escort',
+  btn_print:'🖨 Print Pass', btn_new_visitor:'Register New Visitor →',
+  email_title:'Duracell DCL – Visitor Safety Exam Result',
+  email_divider:'===========================================',
+  email_name:'Visitor Name  :',
+  email_company:'Company       :',
+  email_date:'Visit Date    :',
+  email_host:'Host          :',
+  email_purpose:'Purpose       :',
+  email_attempt:'Attempt #     :',
+  email_score:'Score         :',
+  email_correct:'correct',
+  email_result:'Result        :',
+  email_lang:'Language      :',
+  email_submitted:'Submitted At  :',
+  email_review:'QUESTION REVIEW',
+  email_your_ans:'Your answer   :',
+  email_correct_ans:'Correct answer:',
+  email_result_lbl:'Result        :',
+  email_correct_mark:'CORRECT',
+  email_incorrect_mark:'INCORRECT',
+  email_passed:'PASSED',
+  email_failed:'FAILED',
+  email_footer:'Auto-generated by Duracell DCL Visitor Management System',
+  email_subject_prefix:'[Duracell DCL] Visitor Exam Result',
+  slides:[
+    {heading:'Welcome to Duracell DCL',body:`<ul><li>DCL is a world-class battery manufacturing facility operating under ISO 45001:2018</li><li>Safety is our number one priority — all visitors must complete this induction</li><li>Your visitor badge must be worn and visible at all times on site</li><li>You must be accompanied by a DCL host in all restricted areas</li><li>Photography and recording require prior written authorisation</li></ul>`},
+    {heading:'Personal Protective Equipment',body:`<ul><li><b>Safety glasses / goggles</b> — mandatory in all production and lab areas</li><li><b>Safety shoes</b> — steel-toe, EH-rated footwear required beyond reception</li><li><b>Hi-Visibility vest</b> — required in warehouse, logistics, and outdoor zones</li><li><b>Hard hat</b> — required in overhead work and construction zones</li><li><b>Chemical-resistant gloves</b> — mandatory near battery handling areas</li><li>Remove all jewellery and loose items before entering production floors</li></ul>`},
+    {heading:'Battery Chemical Hazards',body:`<ul><li>Alkaline batteries contain <b>potassium hydroxide (KOH)</b> — a corrosive electrolyte</li><li>Lithium batteries may release <b>toxic fumes</b> if ruptured or overheated</li><li>Manganese compounds (35–40%) present inhalation and skin contact hazards</li><li>Never short-circuit, crush, disassemble, or expose batteries to fire</li><li>If electrolyte contacts skin/eyes — flush with water for minimum 15 minutes</li><li>Safety Data Sheets (SDS) are posted at every workstation</li></ul>`},
+    {heading:'Emergency Procedures',body:`<ul><li>On hearing the fire alarm — stop all work and proceed to the nearest exit</li><li><b>Assembly point</b>: Car Park A, North Gate — await roll-call by your escort</li><li>Do NOT use elevators during any emergency evacuation</li><li>Emergency services: dial <b>ext. 999</b> from any internal phone</li><li>Fire extinguishers located at every corridor junction (colour-coded)</li><li>First aid kits and <b>AED defibrillators</b> are on every floor</li></ul>`},
+    {heading:'Electrical Safety & LOTO',body:`<ul><li>Do not touch electrical panels, switchgear, or exposed conductors</li><li><b>Arc flash zones</b> are clearly marked — do not enter without authorised escort</li><li>EH-rated footwear is mandatory in all electrical areas</li><li>LOTO (Lockout / Tagout) programme is enforced site-wide</li><li>Only licensed electricians may work on energised equipment</li><li>Report any damaged cables, sparks, or unusual smells immediately</li></ul>`},
+    {heading:'Environmental & Waste',body:`<ul><li>Duracell DCL is committed to ISO 14001 environmental management</li><li>Do not dispose of batteries, chemicals, or waste in general bins</li><li>Use colour-coded waste stations — labelling is mandatory</li><li>Spillages must be reported immediately — spill kits at every zone</li><li>Lead batteries achieve near 100% recyclability — support our programme</li><li>Comply with all environmental regulations during your visit</li></ul>`},
+    {heading:'General Site Rules',body:`<ul><li>No smoking except in the <b>designated smoking shelter</b> (west entrance)</li><li>Mobile phones must be switched off in all production and quality lab areas</li><li>Speed limit on site roads: <b>10 km/h</b> — pedestrian crossings have priority</li><li>Food and drink only in the canteen / designated break areas</li><li>Report ALL accidents, near misses, and hazards to your DCL host</li><li>Cooperation with DCL EHS staff is mandatory and appreciated</li></ul>`},
+  ],
+  questions:[
+    {q:'What type of footwear is required for visitors entering production areas at Duracell DCL?',opts:['Standard sneakers or trainers','Steel-toe, EH-rated safety shoes','Open-toed sandals are acceptable','Any closed-toe footwear is sufficient'],ans:1},
+    {q:'Potassium hydroxide (KOH) found in alkaline batteries is classified as:',opts:['Non-hazardous household waste','A corrosive electrolyte requiring PPE','A mild irritant with no special handling','A flammable liquid'],ans:1},
+    {q:'Where is the designated assembly point in case of evacuation at Duracell DCL?',opts:['Main reception lobby','Car Park A, North Gate','The canteen area','The security guardhouse'],ans:1},
+    {q:'What should you do if battery electrolyte contacts your eyes?',opts:['Wipe with a dry cloth and continue','Flush with water for at least 15 minutes and seek medical attention','Apply eye drops and wait','Do nothing — alkaline electrolyte is harmless'],ans:1},
+    {q:'What does LOTO stand for in electrical safety?',opts:['Log Out / Tag Out','Lockout / Tagout','Line Operator Training Order','Load Off / Terminate Operations'],ans:1},
+    {q:'When is it permissible to use elevators during a fire evacuation at DCL?',opts:['Only for disabled visitors','Only with a fire marshal escort','Never — always use emergency stairs','When the elevator is on the ground floor'],ans:2},
+    {q:'Which document at every workstation provides chemical hazard and handling information?',opts:['Employee handbook','Safety Data Sheet (SDS)','ISO certificate','Visitor registration form'],ans:1},
+    {q:'At what speed must vehicles travel on Duracell DCL site roads?',opts:['25 km/h','15 km/h','10 km/h','30 km/h'],ans:2},
+    {q:'Which of the following actions is PROHIBITED with lithium batteries?',opts:['Storing at room temperature','Using in approved equipment','Exposing to high heat or open flame','Recycling at approved facilities'],ans:2},
+    {q:'Mobile phones on the production floor must be:',opts:['Set to silent mode','Switched off completely','Used only for photographs','Kept in pockets at all times'],ans:1},
+    {q:'Which PPE is mandatory when working near battery-handling areas?',opts:['Noise-cancelling headphones','Chemical-resistant gloves','Reflective arm bands','Cotton gloves'],ans:1},
+    {q:'What emergency number should you dial from an internal DCL phone?',opts:['112','911','ext. 999','0'],ans:2},
+    {q:'Manganese compounds found in Duracell batteries pose which type of risk?',opts:['High explosion risk','Inhalation and skin contact hazard','Radioactive contamination','Magnetic interference'],ans:1},
+    {q:'Who may perform work on energised electrical equipment at Duracell DCL?',opts:['Any visitor with general awareness training','Only licensed electricians under a strict SWMS','Maintenance staff of any level','Anyone wearing rubber gloves'],ans:1},
+    {q:'What should you do if you witness a near miss or unsafe condition?',opts:['Ignore it if no one was hurt','Report it to your DCL host immediately','Post about it on social media','Handle it yourself without reporting'],ans:1},
+    {q:'Hi-Visibility vests are required in which areas?',opts:['Only in the car park','Reception and admin offices','Warehouse, logistics, and outdoor zones','Only during night visits'],ans:2},
+    {q:'Which environmental standard does Duracell DCL operate under?',opts:['ISO 9001','ISO 14001','ISO 27001','ISO 50001'],ans:1},
+    {q:'What is the correct response when the fire alarm sounds?',opts:['Continue work and wait for confirmation','Stop all work immediately and evacuate to the assembly point','Call a colleague first','Shut down all equipment before leaving'],ans:1},
+    {q:'Battery waste at Duracell DCL must be disposed of:',opts:['In the general waste bins','In colour-coded, labelled waste stations','Down the drain with water','In any available container'],ans:1},
+    {q:'Can visitors enter restricted production areas without an escort?',opts:['Yes, if they completed the safety induction','Yes, between 9 am and 5 pm','No — escort by a DCL host is mandatory at all times','Only for deliveries'],ans:2},
+    {q:'Where must visitors collect and wear their visitor card upon arrival at Duracell?',opts:['They collect it from their host inside the facility','At the entrance — it must be worn at all times','It is mailed to them before the visit','Only VIP visitors need a card'],ans:1},
+    {q:'Which of the following items must be removed BEFORE entering the production workshop?',opts:['Safety glasses and ear plugs','Watch, bracelet, rings, necklace, earrings and lighter','Mobile phone and wallet','Hard hat and hi-vis vest'],ans:1},
+    {q:'Why should visitors with long hair tie it up before entering the workshop?',opts:['To comply with hygiene standards','To prevent it from being caught in machinery','To keep it away from chemical fumes','Because helmets do not fit over loose hair'],ans:1},
+    {q:'Which PPE items are mandatory for all visitors inside the Duracell workshop?',opts:['Hard hat and chemical gloves only','Safety glasses and ear plugs','Hi-vis vest and safety shoes only','Face shield and respirator'],ans:1},
+    {q:'Which clothing is NOT permitted inside the Duracell workshop?',opts:['Long-sleeve shirts','Skirts and shorts','Hi-vis vests','Safety shoes'],ans:1},
+    {q:'What must visitors do at every intersection inside the workshop?',opts:['Speed up to clear the crossing quickly','Stop and check before crossing (Stop-Look-Go)','Follow the red walkway','Wait for a horn signal'],ans:1},
+    {q:'Are visitors allowed to photograph inside the Duracell workshop without authorisation?',opts:['Yes, for personal use only','Yes, as long as no equipment is captured','No — photography is prohibited without authorisation','Only in common areas'],ans:2},
+    {q:'What should visitors do in an emergency at the Duracell facility?',opts:['Call emergency services independently','Find the nearest exit themselves','Follow their host and evacuate through the nearest emergency exit','Wait at their current location'],ans:2},
+    {q:'Where is Assembly Point No. 1 located at the Duracell facility?',opts:['Inside the main lobby','The lawn area to the left in front of the lobby','Near the warehouse loading dock','The employee car park'],ans:1},
+    {q:'Where is Assembly Point No. 2 located at the Duracell facility?',opts:['Outside the main entrance','The lawn area near the warehouse by the ground gate','The rooftop terrace','The canteen area'],ans:1},
+    {q:'Where is the designated smoking area at the Duracell facility?',opts:['Anywhere outdoors away from machinery','Left side of the bicycle shed at the employee entrance','Behind the warehouse','The car park'],ans:1},
+    {q:'What is the smoking policy across the Duracell site (outside the designated area)?',opts:['Smoking is allowed in all outdoor areas','Smoking is permitted in break rooms','The entire facility is strictly no-smoking outside the designated point','Smoking is allowed after working hours'],ans:2},
+    {q:'What must visitors NOT do while walking inside the Duracell facility?',opts:['Greet other employees','Read documents or use a mobile phone while walking','Wear their visitor badge','Follow the green pedestrian walkway'],ans:1},
+    {q:'What should visitors follow to move safely inside the Duracell workshop?',opts:['Any convenient path','Red emergency lines','Green pedestrian walkways','Yellow forklift lanes'],ans:1},
+  ]
+},
+
+zh:{
+  header_title:'杜瑞尔 DCL', header_sub:'访客管理系统',
+  welcome_title:'欢迎来到杜瑞尔 DCL',
+  welcome_sub:'进入厂区前，请完成访客登记及安全入厂教育流程。',
+  sc1_title:'个人防护装备要求', sc2_title:'紧急疏散程序',
+  sc3_title:'化学品与电池危害', sc4_title:'厂区规定',
+  sc5_title:'电气安全', sc6_title:'急救与医疗',
+  sc1_items:['生产区域必须佩戴安全护目镜','必须穿着钢头安全鞋','生产区域须穿荧光背心','指定区域须佩戴安全帽','电池处理区须戴耐化学品手套','不得穿着宽松衣物或佩戴首饰'],
+  sc2_items:['了解最近的紧急出口位置','集合点：北门停车场 A 区','紧急电话：内线 999 / 0800-DCL','走廊均设置灭火器','疏散时严禁使用电梯','随时遵从陪同人员的指引'],
+  sc3_items:['氢氧化钾（KOH）——强腐蚀性电解液','锰化合物——存在吸入风险','严禁使电池短路','发现电池泄漏应立即上报','电池储存区附近禁止明火','每个工作站均备有安全数据表（SDS）'],
+  sc4_items:['访客证必须始终佩戴在显眼处','进入限制区域须有专人陪同','未经书面许可禁止拍照','仅可在指定区域吸烟','生产车间须关闭手机','所有事故须向现场主管报告'],
+  sc5_items:['禁止触摸电气配电盘','保持与带电设备的安全距离','弧闪区域有明确标识','电气区域须穿防电击安全鞋','带电作业仅限持证电工操作','全厂执行上锁挂牌（LOTO）程序'],
+  sc6_items:['各区域入口均备有急救箱','电池区域附近设有洗眼站','接触电池酸液后须冲洗 15 分钟','所有受伤情况须立即上报','就近医院：DCL 医疗中心','每层楼均配备 AED 除颤仪'],
+  disclaimer:`<strong style='color:#E8920A'>重要声明：</strong>继续操作即表示您确认将遵守杜瑞尔 DCL 所有厂区安全要求及 EHS 政策。违规者将被立即要求离开厂区。本次安全教育自登记之日起有效期 <strong>30 天</strong>。`,
+  btn_begin_reg:'开始登记 →',
+  reg_title:'访客登记',
+  reg_sub:'请如实填写所有栏位，相关信息用于厂区安保及紧急联络。',
+  lbl_name:'访客姓名 *', ph_name:'例：张伟',
+  lbl_id:'身份证 / 护照号码 *', ph_id:'例：330101199001011234',
+  lbl_company:'公司 / 机构 *', ph_company:'例：ABC 物流有限公司',
+  lbl_email:'电子邮件 *', lbl_phone:'手机 / 联系电话 *',
+  lbl_vehicle:'车牌号（如适用）', ph_vehicle:'例：粤 A 12345',
+  lbl_date:'到访日期 *',
+  lbl_purpose:'到访目的 *',
+  lbl_host:'DCL 接待人 *', ph_host:'请填写您拜访对象的姓名',
+  lbl_dept:'到访部门',
+  lbl_health:'特殊健康状况', ph_health:'例：哮喘、乳胶过敏（可选填）',
+  lbl_emergency:'紧急联系人姓名与电话 *', ph_emergency:'例：张丽 – 138-0000-0000',
+  opt_select:'— 请选择 —',
+  opt_p1:'供应商 / 送货', opt_p2:'承包商 / 维保',
+  opt_p3:'审计 / 检查', opt_p4:'商务会议',
+  opt_p5:'客户 / 合作伙伴参观', opt_p6:'政府 / 监管机构', opt_p7:'其他',
+  opt_d1:'制造 / 生产', opt_d2:'质量保证',
+  opt_d3:'仓储 / 物流', opt_d4:'工程部',
+  opt_d5:'EHS（环境健康安全）', opt_d6:'行政 / 人力资源',
+  opt_d7:'研发 / 实验室', opt_d8:'高管 / 管理层',
+  ack_heading:'安全确认',
+  ack1:'本人已阅读并理解欢迎页面上显示的<b>厂区安全规定及个人防护装备要求</b>。',
+  ack2:'本人同意在生产区域及限制区域内全程佩戴所要求的<b>个人防护装备（PPE）</b>。',
+  ack3:'本人了解在厂区限制区域内必须<b>全程由 DCL 接待人陪同</b>。',
+  ack4:'本人同意遵守所有<b>EHS 政策及应急程序</b>，并将服从 DCL 安全人员的指示。',
+  btn_back:'← 返回', btn_save_continue:'保存并继续 →',
+  err_name:'请填写访客姓名',
+  err_id:'请填写身份证 / 护照号码', err_company:'请填写公司名称',
+  err_email:'请填写有效的电子邮件', err_email_fmt:'电子邮件格式不正确',
+  err_phone:'请填写联系电话', err_date:'请选择到访日期',
+  err_purpose:'请选择到访目的', err_host:'请填写接待人姓名',
+  err_emergency:'请填写紧急联系人信息', err_ack:'请勾选所有安全确认项',
+  train_title:'安全培训',
+  train_sub:'请完成视频培训或查看幻灯片演示。至少完成其中一项方可参加考试。',
+  train_info:'培训内容基于杜瑞尔 DCL EHS 入厂须知要求，请认真学习——考题均来自本培训内容。',
+  tab_video:'▶ 视频培训', tab_slides:'📄 幻灯片演示',
+  video_total:'合计：约 14 分钟', video_chapters:'视频章节',
+  video_chapter_prefix:'DCL 安全入厂教育——第',
+  video_watch_note:'观看视频至少 80% 方可解锁考试。您也可以改用幻灯片演示完成培训。',
+  ch0_title:'厂区概况与访客须知', ch1_title:'个人防护装备要求及使用',
+  ch2_title:'电池化学危害与安全数据表', ch3_title:'应急程序与疏散',
+  ch4_title:'电气安全与上锁挂牌（LOTO）',
+  btn_prev_slide:'← 上一页', btn_next_slide:'下一页 →',
+  train_pending:'请先完成培训，再进入考试环节。',
+  train_done:'培训已完成！您现在可以参加考试。',
+  btn_to_exam:'前往考试 →',
+  exam_title:'安全知识考试',
+  exam_attempt_label:'第 {n} 次考试 — 题目随机抽取。成绩 ≥ 80% 视为通过。',
+  exam_progress_label:'进度：',
+  btn_prev_q:'← 上一题', btn_next_q:'下一题 →', btn_submit_exam:'提交试卷 ✓',
+  question_of:'第 {a} 题 / 共 {b} 题',
+  unanswered_confirm:'您有 {n} 道题目未作答，是否仍然提交？',
+  no_answer:'（未作答）', your_answer:'您的答案：', correct_answer:'正确答案：',
+  question_review:'答题回顾',
+  score_passed:'通过', score_failed:'未通过',
+  score_congrats:'🎉 恭喜您通过！', score_fail_msg:'⚠️ 差点就过了',
+  score_pass_detail:'您答对了 {c} 道题（共 {t} 题），现在可以完成访客入厂登记。',
+  score_fail_detail:'您答对了 {c} 道题（共 {t} 题）。通过分数线为 80%，请重新学习培训材料后再次参加考试。',
+  btn_complete_onboard:'完成入厂登记 →',
+  btn_restudy:'📖 重新学习', btn_retake:'🔄 重新考试',
+  onboard_title:'访客入厂登记',
+  onboard_sub:'欢迎！您的登记已完成，请前往前台领取访客证。',
+  induction_complete:'安全教育已完成！',
+  induction_desc:'您已成功完成杜瑞尔 DCL 访客安全入厂教育。',
+  pass_badge_type:'证件类型', pass_visitor:'访客',
+  pass_valid:'有效期至', pass_date:'到访日期',
+  pass_score:'考试成绩', pass_purpose:'到访目的', pass_host:'接待人',
+  next_steps:'<strong>后续步骤：</strong><br>1. 将此页面出示给保安<br>2. 领取纸质访客证及个人防护装备<br>3. 在接待区等候 DCL 接待人<br>4. 未有人陪同时严禁进入限制区域',
+  btn_print:'🖨 打印访客证', btn_new_visitor:'登记新访客 →',
+  email_title:'杜瑞尔 DCL – 访客安全考试结果',
+  email_divider:'===========================================',
+  email_name:'访客姓名      :',
+  email_company:'公司          :',
+  email_date:'到访日期      :',
+  email_host:'接待人        :',
+  email_purpose:'到访目的      :',
+  email_attempt:'第 {n} 次考试 :',
+  email_score:'考试成绩      :',
+  email_correct:'题正确',
+  email_result:'考试结果      :',
+  email_lang:'语言          :',
+  email_submitted:'提交时间      :',
+  email_review:'答题回顾',
+  email_your_ans:'您的答案      :',
+  email_correct_ans:'正确答案      :',
+  email_result_lbl:'结果          :',
+  email_correct_mark:'正确 ✓',
+  email_incorrect_mark:'错误 ✗',
+  email_passed:'通过',
+  email_failed:'未通过',
+  email_footer:'由杜瑞尔 DCL 访客管理系统自动生成',
+  email_subject_prefix:'[杜瑞尔 DCL] 访客考试结果',
+  slides:[
+    {heading:'欢迎来到杜瑞尔 DCL',body:`<ul><li>DCL 是依照 ISO 45001:2018 标准运营的世界级电池制造工厂</li><li>安全是我们的首要任务——所有访客须完成本安全教育</li><li>访客证须佩戴于显眼位置，全程可见</li><li>在所有限制区域内须由 DCL 接待人全程陪同</li><li>拍照录像须事先获得书面授权</li></ul>`},
+    {heading:'个人防护装备（PPE）',body:`<ul><li><b>安全护目镜</b>——生产区及实验室区域强制要求</li><li><b>安全鞋</b>——前台以外区域须穿着钢头防电击安全鞋</li><li><b>荧光背心</b>——仓储、物流及户外区域必须穿着</li><li><b>安全帽</b>——高空作业及施工区域必须佩戴</li><li><b>耐化学品手套</b>——电池处理区域强制要求</li><li>进入生产车间前须摘除所有首饰及宽松配件</li></ul>`},
+    {heading:'电池化学危害',body:`<ul><li>碱性电池含有<b>氢氧化钾（KOH）</b>——强腐蚀性电解液</li><li>锂电池如破裂或过热可能释放<b>有毒烟雾</b></li><li>锰化合物（含量 35–40%）具有吸入和皮肤接触危害</li><li>严禁使电池短路、挤压、拆解或接触明火</li><li>电解液接触皮肤或眼睛时须用清水冲洗至少 15 分钟</li><li>每个工作站均张贴安全数据表（SDS）</li></ul>`},
+    {heading:'应急程序',body:`<ul><li>听到火灾警报时——立即停止作业，前往最近紧急出口</li><li><b>集合点</b>：北门停车场 A 区——等待陪同人员点名</li><li>任何紧急疏散期间严禁使用电梯</li><li>紧急服务：拨打任意内线电话<b>内线 999</b></li><li>灭火器设置于每个走廊交叉口（颜色编码）</li><li>每层楼均备有急救箱及 <b>AED 除颤仪</b></li></ul>`},
+    {heading:'电气安全与上锁挂牌',body:`<ul><li>禁止触摸电气配电盘、开关设备或裸露导体</li><li><b>弧闪区域</b>有明确标识——未经授权陪同严禁入内</li><li>所有电气区域须穿防电击安全鞋</li><li>全厂执行 LOTO（上锁挂牌）程序</li><li>带电设备作业仅限持证电工进行</li><li>发现电缆损坏、电火花或异味须立即向接待人报告</li></ul>`},
+    {heading:'环境与废物管理',body:`<ul><li>杜瑞尔 DCL 遵循 ISO 14001 环境管理标准</li><li>电池、化学品及废弃物不得投入普通垃圾桶</li><li>须使用颜色编码废物站——标签必须填写</li><li>泄漏须立即上报——各区域均备有溢出应急包</li><li>铅酸电池可实现接近 100% 循环利用</li><li>参观期间须遵守所有环保法规</li></ul>`},
+    {heading:'厂区通用规定',body:`<ul><li>仅可在<b>指定吸烟区</b>（西门吸烟棚）吸烟</li><li>生产及质检实验室区域须关闭手机</li><li>厂区道路限速：<b>10 公里/小时</b>——行人道优先</li><li>饮食仅限在餐厅或指定休息区进行</li><li>所有事故、险情及危险隐患须向 DCL 接待人报告</li><li>配合 DCL EHS 人员的工作是强制要求</li></ul>`},
+  ],
+  questions:[
+    {q:'进入杜瑞尔 DCL 生产区域，所有访客须穿着哪种鞋类？',opts:['普通运动鞋或球鞋','钢头防电击安全鞋','露趾凉鞋可以接受','任何包头鞋均可'],ans:1},
+    {q:'碱性电池中含有的氢氧化钾（KOH）被归类为：',opts:['无害家庭废弃物','需要防护的强腐蚀性电解液','轻度刺激物，无需特殊处理','易燃液体'],ans:1},
+    {q:'杜瑞尔 DCL 疏散时的指定集合点在哪里？',opts:['主接待大厅','北门停车场 A 区','餐厅区域','保安室'],ans:1},
+    {q:'若电池电解液不慎接触眼睛，应如何处理？',opts:['用干布擦拭后继续工作','立即用清水冲洗至少 15 分钟，并立即就医','滴眼药水后等待','无需处理——碱性电解液无害'],ans:1},
+    {q:'在电气安全中，LOTO 代表什么？',opts:['登出 / 标出','上锁 / 挂牌','线路操作员培训指令','负载断开 / 终止运行'],ans:1},
+    {q:'在 DCL 发生火灾疏散时，何时可以使用电梯？',opts:['仅限残障访客','仅在消防员陪同下','任何时候都不允许——须走紧急楼梯','当电梯在一楼时'],ans:2},
+    {q:'每个工作站张贴的哪份文件提供化学危害及处理信息？',opts:['员工手册','安全数据表（SDS）','ISO 证书','访客登记表'],ans:1},
+    {q:'车辆在杜瑞尔 DCL 厂区道路上须限速多少？',opts:['25 公里/小时','15 公里/小时','10 公里/小时','30 公里/小时'],ans:2},
+    {q:'以下哪种行为是对锂电池的禁止操作？',opts:['在室温下储存','在经批准的设备中使用','暴露于高温或明火','在批准的设施中回收'],ans:2},
+    {q:'在生产车间，手机应处于何种状态？',opts:['设置为静音','完全关机','仅用于拍照','放在口袋里'],ans:1},
+    {q:'在电池处理区域附近，哪种防护装备是强制要求的？',opts:['降噪耳机','耐化学品手套','反光臂带','棉质手套'],ans:1},
+    {q:'拨打 DCL 内线电话应使用哪个紧急号码？',opts:['112','911','内线 999','0'],ans:2},
+    {q:'杜瑞尔电池中含有的锰化合物存在哪类风险？',opts:['高爆炸风险','吸入和皮肤接触危害','放射性污染','磁场干扰'],ans:1},
+    {q:'在杜瑞尔 DCL，谁可以对带电设备进行操作？',opts:['完成一般安全意识培训的任何访客','仅限持证电工在严格作业方法规程下操作','任何级别的维护人员','佩戴橡胶手套的任何人'],ans:1},
+    {q:'若目击险情或不安全状况，应如何处理？',opts:['若无人受伤则忽略','立即向您的 DCL 接待人报告','在社交媒体上发帖','自行处理，不予上报'],ans:1},
+    {q:'荧光背心须在哪些区域穿着？',opts:['仅在停车场','接待区和行政办公室','仓储、物流及户外区域','仅在夜间参观时'],ans:2},
+    {q:'杜瑞尔 DCL 遵循哪项环境管理标准？',opts:['ISO 9001','ISO 14001','ISO 27001','ISO 50001'],ans:1},
+    {q:'听到火灾警报时，正确的做法是：',opts:['继续工作并等待确认','立即停止所有工作并疏散至集合点','先致电同事','关闭所有设备后再离开'],ans:1},
+    {q:'杜瑞尔 DCL 的电池废弃物必须如何处理？',opts:['投入普通垃圾桶','投入颜色编码、有标签的废物站','加水后倒入下水道','放入任何可用容器'],ans:1},
+    {q:'访客是否可以在无人陪同的情况下进入限制生产区域？',opts:['可以，如果已完成安全教育','可以，在上午9点至下午5点期间','不可以——任何时候都必须由 DCL 接待人陪同','仅送货时可以'],ans:2},
+    {q:'访客到达金霸王后，访客卡应在哪里领取，并如何佩戴？',opts:['在接待人陪同下进入后于室内领取','在入口处领取，并始终佩戴在显眼位置','在到访前邮寄给访客','只有贵宾访客才需要佩戴访客卡'],ans:1},
+    {q:'进入生产车间前，必须取下以下哪些物品？',opts:['安全眼镜和耳塞','手表、运动手环、戒指、项链、耳环及打火机','手机和钱包','安全帽和荧光背心'],ans:1},
+    {q:'头发较长的访客为何在进入车间前须将头发卷起？',opts:['符合卫生规定','防止头发被机器卷入，造成人身伤害','避免接触化学烟雾','戴上安全帽后无法容纳散开的头发'],ans:1},
+    {q:'所有访客在金霸王车间内必须佩戴哪些个人防护用品？',opts:['仅限安全帽和化学品手套','安全眼镜和耳塞','仅限荧光背心和安全鞋','面罩和防毒口罩'],ans:1},
+    {q:'在金霸王车间内，以下哪种着装是不允许的？',opts:['长袖衬衫','裙子及短裤','荧光背心','安全鞋'],ans:1},
+    {q:'访客在车间内遇到交叉路口时，应如何处理？',opts:['加快通过路口','停止并观察后再通行（停、看、行）','沿红色通道行走','等待喇叭信号'],ans:1},
+    {q:'未经授权，访客是否可以在金霸王车间内拍照？',opts:['可以，仅限个人使用','可以，只要不拍摄设备','不可以——未经授权严禁拍照','仅在公共区域可以拍照'],ans:2},
+    {q:'在金霸王厂区发生紧急情况时，访客应如何处理？',opts:['自行联系紧急服务','自行寻找最近出口','跟随接待人员从最近的逃生门撤离','在原地等候救援'],ans:2},
+    {q:'金霸王厂区的一号紧急疏散集合点在哪里？',opts:['主大堂内','大堂外左前方的草坪区域','仓库装卸区附近','员工停车场'],ans:1},
+    {q:'金霸王厂区的二号紧急疏散集合点在哪里？',opts:['主入口外','仓库靠近地闸的草坪区域','楼顶平台','餐厅区域'],ans:1},
+    {q:'金霸王厂区的指定吸烟点在哪里？',opts:['任何远离设备的户外区域','员工出入口单车棚左侧','仓库后方','停车场'],ans:1},
+    {q:'金霸王厂区（指定吸烟点以外）的吸烟规定是什么？',opts:['所有户外区域均可吸烟','休息室内可以吸烟','除指定地点外，公司全域禁烟','下班后可以在任意地点吸烟'],ans:2},
+    {q:'访客在金霸王厂区内行走时，严禁做哪些事情？',opts:['向其他员工打招呼','边走边阅读文件或使用手机','佩戴访客卡','走绿色人行通道'],ans:1},
+    {q:'访客在金霸王车间内应沿哪条路线安全行走？',opts:['任何方便的路径','红色紧急通道','绿色人行通道','黄色叉车通道'],ans:1},
+  ]
+}
+};
+
+// ── DOM HELPERS ──
+const $el = id => document.getElementById(id);
+
+// ── VIDEO ELEMENT REFS ──
+const $vid      = () => $el('realVideo');
+const $vProgress= () => $el('videoProgress');
+const $vTime    = () => $el('videoTime');
+const $vBadge   = () => $el('videoWatchedBadge');
+const $vPlayBtn = () => $el('vcPlayBtn');
+
+// ── TRAINING STATUS HELPER ──
+function setTrainingStatus(done) {
+  trainingDone = done;
+  const ts = $el('training-status');
+  if (!ts) return;
+  if (done) {
+    ts.className = 'alert alert-success';
+    ts.innerHTML = '<span>✅</span><span>' + t('train_done') + '</span>';
+    const btn = $el('btnToExam');
+    if (btn) btn.disabled = false;
+  } else {
+    ts.className = 'alert alert-warn';
+    const sp = ts.querySelector('span:last-child');
+    if (sp) sp.textContent = t('train_pending');
+  }
+}
+
+// ═══════════════════════════════════════════════
+// LANGUAGE ENGINE
+// ═══════════════════════════════════════════════
+let lang = 'en';
+
+function t(key, vars) {
+  let s = (T[lang] && T[lang][key] !== undefined) ? T[lang][key] : (T.en[key] || key);
+  if (vars) Object.entries(vars).forEach(([k,v]) => { s = s.replace('{'+k+'}', v); });
+  return s;
+}
+const fmtTime = s => Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');
+const tSlides    = () => T[lang].slides    || T.en.slides;
+const tQuestions = () => T[lang].questions || T.en.questions;
+
+function setLang(l) {
+  lang = l;
+  document.body.classList.toggle('zh', l==='zh');
+  $el('btnEN').classList.toggle('active', l==='en');
+  $el('btnZH').classList.toggle('active', l==='zh');
+  applyTranslations();
+  if (currentScreen === 2) {
+    renderSlides();
+  }
+  if (currentScreen === 3 && examQuestions.length && examQuestions[currentQ]) renderQuestion(currentQ);
+  if (currentScreen === 4) $el('nextStepsText').innerHTML = t('next_steps');
+}
+
+function applyTranslations() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const v = t(el.getAttribute('data-i18n'));
+    if (v) el.innerHTML = v;
+  });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+    const v = t(el.getAttribute('data-i18n-ph'));
+    if (v) el.placeholder = v;
+  });
+  ['sc1','sc2','sc3','sc4','sc5','sc6'].forEach(id => {
+    const ul = $el(id+'_list');
+    if (!ul) return;
+    ul.innerHTML = (T[lang][id+'_items'] || T.en[id+'_items'] || []).map(x => '<li>'+x+'</li>').join('');
+  });
+  document.querySelectorAll('select option[data-i18n]').forEach(opt => {
+    const v = t(opt.getAttribute('data-i18n'));
+    if (v) opt.textContent = v;
+  });
+  setTrainingStatus(trainingDone);
+  if (examAttempt > 0) { const _al=$el('examAttemptLabel'); if(_al) _al.textContent=t('exam_attempt_label',{n:examAttempt}); }
+}
+
+// ═══════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════
+let currentScreen = 0;
+let visitorData = {};
+let trainingDone = false;
+
+function goTo(n) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  $el('screen-'+n).classList.add('active');
+  currentScreen = n;
+  updateDots(n);
+  window.scrollTo(0,0);
+  if (n===2){
+    const vid=$vid();
+    if(vid){
+      const doPlay = () => { vid.play().catch(()=>{}); };
+      if(vid.readyState >= 3){
+        doPlay();
+      } else {
+        vid.addEventListener('canplay', doPlay, {once:true});
+      }
+    }
+  }
+  if (n===3) { stopVideo(); initExam(); }
+  if (n===4) populatePass();
+}
+
+function updateDots(n) {
+  for(let i=0;i<5;i++){
+    const d=$el('dot'+i);
+    if(d) d.className='step-dot'+(i<n?' done':i===n?' active':'');
+  }
+}
+
+// ═══════════════════════════════════════════════
+// FORM
+// ═══════════════════════════════════════════════
+function submitForm() {
+  const validate=(id,errId,msgKey)=>{
+    const el=$el(id), errEl=$el(errId);
+    const empty=!String(el.value||'').trim();
+    el.classList.toggle('error', empty);
+    if(errEl) errEl.textContent=empty?t(msgKey):'';
+    return empty ? t(msgKey) : null;
+  };
+  const errs=[
+    validate('fFullName','err-fullName','err_name'),
+    validate('fIdNum','err-idNum','err_id'),
+    validate('fCompany','err-company','err_company'),
+    validate('fEmail','err-email','err_email'),
+    validate('fPhone','err-phone','err_phone'),
+    validate('fDate','err-date','err_date'),
+    validate('fPurpose','err-purpose','err_purpose'),
+    validate('fHost','err-host','err_host'),
+    validate('fEmergency','err-emergency','err_emergency'),
+  ].filter(Boolean);
+  const emailEl=$el('fEmail');
+  if(emailEl.value && !/^\S+@\S+\.\S+$/.test(emailEl.value)){
+    emailEl.classList.add('error');
+    const errEmail=$el('err-email'); if(errEmail) errEmail.textContent=t('err_email_fmt');
+    errs.push(t('err_email_fmt'));
+  }
+  if(!['ack1','ack2','ack3','ack4'].every(id=>$el(id).checked)) errs.push(t('err_ack'));
+  const al=$el('form-alert');
+  if(errs.length){ $el('form-alert-msg').textContent=errs[0]; al.style.display='flex'; return; }
+  al.style.display='none';
+  visitorData={
+    fullName:$el('fFullName').value.trim(),
+    company:$el('fCompany').value.trim(),     email:$el('fEmail').value.trim(),
+    phone:$el('fPhone').value.trim(),         date:$el('fDate').value,
+    purpose:$el('fPurpose').value,            host:$el('fHost').value.trim(),
+  };
+  goTo(2);
+}
+
+function onVideoLoaded() {
+  const vid=$vid();
+  const p=$vProgress();
+  const vt=$vTime();
+  const vd=$el('videoDuration');
+  if(p) p.style.width='0%';
+  if(vt) vt.textContent='0:00';
+  if(vd && vid && vid.duration) {
+    const m=Math.floor(vid.duration/60), s=Math.floor(vid.duration%60);
+    vd.textContent=m+':'+String(s).padStart(2,'0');
+  }
+}
+
+function onVideoProgress() {
+  const vid=$vid();
+  if(!vid||!vid.duration) return;
+  const pct=(vid.currentTime/vid.duration)*100;
+  if(pct>maxWatchedPct) maxWatchedPct=pct;
+  const p=$vProgress();
+  const vt=$vTime();
+  if(p) p.style.width=Math.min(pct,100)+'%';
+  const m=Math.floor(vid.currentTime/60),s=Math.floor(vid.currentTime%60);
+  if(vt) vt.textContent=m+':'+String(s).padStart(2,'0');
+  // Sync play/pause button icon
+  const btn=$vPlayBtn();
+  if(btn) btn.textContent = vid.paused ? '▶' : '⏸';
+  if(maxWatchedPct>=80&&!videoWatched){
+    videoWatched=true;
+    const badge=$vBadge();
+    if(badge) badge.style.display='inline-flex';
+    checkTrainingDone();
+  }
+}
+
+function onVideoEnded() {
+  maxWatchedPct=100; videoWatched=true;
+  const p=$vProgress();
+  const badge=$vBadge();
+  const btn=$vPlayBtn();
+  if(p) p.style.width='100%';
+  if(badge) badge.style.display='inline-flex';
+  if(btn) btn.textContent='↺';
+  checkTrainingDone();
+}
+
+function stopVideo() {
+  const vid = $vid();
+  if (vid) { vid.pause(); }
+  const btn = $vPlayBtn();
+  if (btn) btn.textContent = '▶';
+}
+
+function toggleVideoPlay() {
+  const vid = $vid();
+  if (!vid) return;
+  if (vid.paused) {
+    vid.play().catch(()=>{});
+  } else {
+    vid.pause();
+  }
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.remove('active'));
+  document.querySelectorAll('.training-panel').forEach(p=>p.classList.remove('active'));
+  if(tab==='video'){
+    document.querySelectorAll('.tab-btn')[0].classList.add('active');
+    $el('panel-video').classList.add('active');
+    const vid = $vid();
+    if(vid){
+      const doPlay = () => { vid.play().catch(()=>{}); };
+      if(vid.readyState >= 3) doPlay();
+      else vid.addEventListener('canplay', doPlay, {once:true});
+    }
+  } else {
+    const vid = $vid();
+    if(vid) vid.pause();
+    document.querySelectorAll('.tab-btn')[1].classList.add('active');
+    $el('panel-slides').classList.add('active');
+    renderSlides();
+  }
+}
+
+// ═══════════════════════════════════════════════
+// TRAINING — SLIDES
+// ═══════════════════════════════════════════════
+let currentSlide=0, slidesSeenSet=new Set();
+
+function renderSlides() {
+  const slides = tSlides();
+  const s = slides[currentSlide];
+  $el('slideFrame').innerHTML = `
+    <div class='slide-content'>
+      <div class='slide-number'>Slide ${currentSlide+1} / ${slides.length}</div>
+      <div class='slide-heading'>${s.heading}</div>
+      <div class='slide-body'>${s.body}</div>
+    </div>`;
+  slidesSeenSet.add(currentSlide);
+  let dots='';
+  for(let i=0;i<slides.length;i++){
+    const cls=i===currentSlide?'active':slidesSeenSet.has(i)?'seen':'';
+    dots+=`<div class='slide-dot ${cls}' onclick='jumpSlide(${i})'></div>`;
+  }
+  $el('slideDots').innerHTML=dots;
+  if(slidesSeenSet.size===slides.length) checkTrainingDone();
+}
+function nextSlide(){ const l=(tSlides()).length; if(currentSlide<l-1){currentSlide++;renderSlides();} }
+function prevSlide(){ if(currentSlide>0){currentSlide--;renderSlides();} }
+function jumpSlide(i){ currentSlide=i; renderSlides(); }
+
+function checkTrainingDone() {
+  const videoOk=videoWatched;
+  const slidesOk=slidesSeenSet.size===(tSlides()).length;
+  if(videoOk||slidesOk){
+    setTrainingStatus(true);
+  }
+}
+
+// ═══════════════════════════════════════════════
+// EXAM
+// ═══════════════════════════════════════════════
+let examQuestions=[], examQuestionIndices=[], examAnswers=[], examAttempt=0, currentQ=0;
+let timerInterval=null, timerSec=1200;
+
+function initExam() {
+  try {
+  clearInterval(timerInterval);
+  examAttempt++;
+  examAnswers=[]; currentQ=0;
+  $el('scorePanel').style.display='none';
+  $el('questionArea').style.display='block';
+  $el('examNav').style.display='flex';
+  $el('examAttemptLabel').textContent=t('exam_attempt_label',{n:examAttempt});
+  // Always index from EN pool so indices are language-neutral
+  const fullPool = T.en.questions || [];
+  const indexed = fullPool.map((q,i) => ({...q, _idx: i})).sort(()=>Math.random()-.5);
+  const selected = indexed.slice(0,10);
+  examQuestions = selected.map(q => { const {_idx,...rest}=q; return rest; });
+  examQuestionIndices = selected.map(q => q._idx);
+  examAnswers=new Array(10).fill(null);
+  timerSec=1200; updateTimerDisplay();
+  timerInterval=setInterval(()=>{ timerSec--; updateTimerDisplay(); if(timerSec<=0){clearInterval(timerInterval);submitExam();} },1000);
+  renderQuestion(0);
+  } catch(e) {
+    console.error('initExam error:', e.message, e.stack);
+    const qa = $el('questionArea');
+    if (qa) qa.innerHTML = `<div style='color:red;padding:20px'>Init Error: ${e.message}</div>`;
+  }
+}
+
+function updateTimerDisplay() {
+  const m=Math.floor(timerSec/60),s=timerSec%60;
+  const el=$el('examTimer');
+  if(!el) return;
+  el.textContent=m+':'+String(s).padStart(2,'0');
+  el.style.color=timerSec<120?'var(--red)':'var(--gold)';
+}
+
+
+function updateExamNav(i) {
+  const pBar=$el('examProgressBar'), pLbl=$el('examProgressLabel');
+  const btnP=$el('btnPrevQ'), btnN=$el('btnNextQ'), btnS=$el('btnSubmitExam');
+  const last = i === examQuestions.length-1;
+  if(pBar) pBar.style.width=((i+1)/examQuestions.length*100)+'%';
+  if(pLbl) pLbl.textContent=(i+1)+' / '+examQuestions.length;
+  if(btnP) btnP.style.display = i===0 ? 'none' : 'inline-flex';
+  if(btnN) btnN.style.display = last  ? 'none' : 'inline-flex';
+  if(btnS) btnS.style.display = last  ? 'inline-flex' : 'none';
+}
+function renderQuestion(i) {
+  try {
+  currentQ = i;
+  var qIdx = examQuestionIndices[i];
+  var q = (T[lang].questions || T.en.questions)[qIdx];
+  if (!q) { console.error('renderQuestion: no question at index', qIdx); return; }
+  var letters = ['A','B','C','D'];
+
+  var card = document.createElement('div');
+  card.className = 'question-card';
+
+  var qNum = document.createElement('div');
+  qNum.className = 'question-num';
+  qNum.textContent = t('question_of', {a: i+1, b: examQuestions.length});
+  card.appendChild(qNum);
+
+  var qText = document.createElement('div');
+  qText.className = 'question-text';
+  qText.textContent = q.q;
+  card.appendChild(qText);
+
+  var optsDiv = document.createElement('div');
+  optsDiv.className = 'options';
+
+  for (var idx = 0; idx < q.opts.length; idx++) {
+    var btn = document.createElement('button');
+    btn.className = 'option-btn' + (examAnswers[i] === idx ? ' selected' : '');
+    btn.onclick = (function(n){ return function(){ selectOption(n); }; })(idx);
+
+    var letterSpan = document.createElement('span');
+    letterSpan.className = 'option-letter';
+    letterSpan.textContent = letters[idx];
+    btn.appendChild(letterSpan);
+
+    var textSpan = document.createElement('span');
+    textSpan.style.flex = '1';
+    textSpan.textContent = q.opts[idx];
+    btn.appendChild(textSpan);
+    optsDiv.appendChild(btn);
+  }
+  card.appendChild(optsDiv);
+
+  var area = $el('questionArea');
+  area.innerHTML = '';
+  area.appendChild(card);
+
+  updateExamNav(i);
+  } catch(e) {
+    console.error('renderQuestion error:', e.message, e.stack);
+    var qa = $el('questionArea');
+    if (qa) { qa.innerHTML = `<div style='color:red;padding:20px'>Error: ${e.message}</div>`; }
+  }
+}
+function selectOption(idx){ examAnswers[currentQ]=idx; renderQuestion(currentQ); }
+function prevQuestion(){ if(currentQ>0) renderQuestion(currentQ-1); }
+function nextQuestion(){ if(currentQ<examQuestions.length-1) renderQuestion(currentQ+1); }
+
+function submitExam() {
+  clearInterval(timerInterval);
+  const unanswered=examAnswers.filter(a=>a===null).length;
+  if(unanswered>0){
+    const go=confirm(t('unanswered_confirm',{n:unanswered}));
+    if(!go){renderQuestion(currentQ);return;}
+  }
+  let correct=0;
+  examQuestions.forEach((q,i)=>{ if(examAnswers[i]===q.ans) correct++; });
+  const score=Math.round((correct/examQuestions.length)*100);
+  const pass=score>=80;
+  $el('questionArea').style.display='none';
+  $el('examNav').style.display='none';
+  visitorData.examScore=score;
+
+  // Auto-send email only on pass
+  if (pass) sendResultEmail(score, pass, correct);
+
+  var circleClass = pass ? 'pass' : 'fail';
+  var scoreColor  = pass ? '#1E7E34' : '#C0392B';
+  var headColor   = pass ? 'var(--green)' : 'var(--red)';
+  var btnHtml = pass
+    ? `<button class='btn btn-primary' onclick='goTo(4)'>${t('btn_complete_onboard')}</button>`
+    : `<button class='btn btn-secondary' onclick='goTo(2)'>${t('btn_restudy')}</button>`
+      + `<button class='btn btn-primary' onclick='initExam()'>${t('btn_retake')}</button>`;
+  var scoreHtml = `
+    <div class='score-display'>
+      <div class='score-circle ${circleClass}'>
+        <span class='score-num' style='color:${scoreColor}'>${score}%</span>
+        <span class='score-label'>${t(pass ? 'score_passed' : 'score_failed')}</span>
+      </div>
+      <h3 style='font-size:clamp(18px,4vw,24px);color:${headColor};letter-spacing:2px;margin-bottom:8px'>
+        ${t(pass ? 'score_congrats' : 'score_fail_msg')}
+      </h3>
+      <p style='color:var(--text-dim);font-size:14px;max-width:480px;width:100%;margin:0 auto 22px;box-sizing:border-box;padding:0 4px'>
+        ${t(pass ? 'score_pass_detail' : 'score_fail_detail', {c: correct, t: examQuestions.length})}
+      </p>
+      <div class='btn-row'>${btnHtml}</div>
+    </div>`;
+  $el('scorePanel').style.display = 'block';
+  $el('scorePanel').innerHTML = scoreHtml;
+}
+
+
+function populatePass() {
+  const v=visitorData;
+  $el('passName').textContent=(v.fullName||'').toUpperCase();
+  $el('passCompany').textContent=v.company||'—';
+  $el('passDate').textContent=v.date||'—';
+  $el('passScore').textContent=(v.examScore||'—')+'%';
+  $el('passPurpose').textContent=v.purpose||'—';
+  $el('passHost').textContent=v.host||'—';
+  const dt=v.date?new Date(v.date):new Date();
+  dt.setDate(dt.getDate()+30);
+  $el('passValidUntil').textContent=dt.toLocaleDateString();
+  $el('nextStepsText').innerHTML=t('next_steps');
+  buildQR();
+}
+
+function buildQR() {
+  const qr=$el('passQR');
+  qr.innerHTML='';
+  [1,1,1,0,1,1,1,1,0,1,0,1,0,1,1,1,1,1,0,1,1,0,1,0,1,0,0,1,1,1,0,0,1,1,0,1,0,1,0,0,1,0,0,1,1,1,0,0,1]
+    .forEach(v=>{const d=document.createElement('div');d.className=v?'qr-cell':'qr-cell w';qr.appendChild(d);});
+}
+
+function printPass(){ window.print(); }
+
+
+function resetVideoUI() {
+  stopVideo();
+  const vid=$vid();
+  if(vid) vid.currentTime=0;
+  const p=$vProgress(), vt=$vTime(), b=$vBadge(), btn=$vPlayBtn();
+  if(p)   p.style.width='0%';
+  if(vt)  vt.textContent='0:00';
+  if(b)   b.style.display='none';
+  if(btn) btn.textContent='▶';
+}
+function startNew() {
+  visitorData={}; trainingDone=false; examQuestionIndices=[];
+  videoWatched=false; maxWatchedPct=0;
+  slidesSeenSet=new Set();
+  currentSlide=0;
+  resetVideoUI();
+  ['fFullName','fIdNum','fCompany','fEmail','fPhone','fVehicle',
+   'fDate','fHost','fHealth','fEmergency','fPurpose','fDept']
+    .forEach(id=>{ document.getElementById(id).value=''; });
+  ['ack1','ack2','ack3','ack4'].forEach(id=>{document.getElementById(id).checked=false;});
+  $el('btnToExam').disabled=true;
+  goTo(0);
+}
+
+// ═══════════════════════════════════════════════
+// VIDEO SPEED LOCK
+// ═══════════════════════════════════════════════
+function lockPlaybackRate() {
+  const vid = $vid();
+  if (vid && vid.playbackRate !== 1) vid.playbackRate = 1;
+}
+
+function preventSeek() {
+  const vid = $vid();
+  if (!vid) return;
+  // Only allow seeking backward or to already-watched positions
+  const allowedMax = (maxWatchedPct / 100) * vid.duration;
+  if (vid.currentTime > allowedMax + 1) {
+    vid.currentTime = allowedMax;
+  }
+}
+
+
+// ═══════════════════════════════════════════════
+// SUBMIT RESULT TO SERVICE
+// ═══════════════════════════════════════════════
+function submitToService() {
+  const v = visitorData;
+  const name      = (v.fullName || '').trim();
+  const company   = v.company  || '-';
+  const date      = v.date     || new Date().toISOString().split('T')[0];
+  const host      = v.host     || '-';
+  const purpose   = v.purpose  || '-';
+  const score     = v.examScore !== undefined ? v.examScore : '-';
+  const pass      = typeof score === 'number' && score >= 80;
+  const resultTxt = pass ? t('email_passed') : t('email_failed');
+  const letters   = ['A','B','C','D'];
+  const NL        = String.fromCharCode(13,10);
+  const pool      = T[lang].questions || T.en.questions;
+  const correctCount = examQuestionIndices.filter(function(qIdx,i){
+    var q = pool[qIdx]; return q && examAnswers[i]===q.ans;
+  }).length;
+  const divider = '=======================================' + NL;
+
+  let qaLines = '';
+  examQuestionIndices.forEach(function(qIdx, i) {
+    var q = pool[qIdx]; if(!q) return;
+    const answered   = examAnswers[i] !== null;
+    const isCorrect  = answered && examAnswers[i] === q.ans;
+    const noAns      = lang==='zh' ? '（未作答）' : '(no answer)';
+    const yourAns    = answered ? letters[examAnswers[i]] + '. ' + q.opts[examAnswers[i]] : noAns;
+    const correctAns = letters[q.ans] + '. ' + q.opts[q.ans];
+    qaLines += (i+1) + '. ' + q.q + NL
+      + '   ' + t('email_your_ans') + ' ' + yourAns + NL
+      + '   ' + t('email_correct_ans') + ' ' + correctAns + NL
+      + '   ' + t('email_result_lbl') + ' ' + (isCorrect ? t('email_correct_mark') : t('email_incorrect_mark')) + NL + NL;
+  });
+
+  const bodyText =
+    t('email_title') + NL + divider
+    + t('email_name') + ' ' + name + NL
+    + t('email_company') + ' ' + company + NL
+    + t('email_date') + ' ' + date + NL
+    + t('email_host') + ' ' + host + NL
+    + t('email_purpose') + ' ' + purpose + NL
+    + t('email_attempt') + ' ' + examAttempt + NL
+    + t('email_score') + ' ' + score + '% (' + correctCount + '/' + examQuestions.length + ' ' + t('email_correct') + ')' + NL
+    + t('email_result') + ' ' + resultTxt + NL
+    + t('email_lang') + ' ' + (lang==='zh' ? '中文' : 'EN') + NL
+    + t('email_submitted') + ' ' + new Date().toLocaleString() + NL
+    + divider + NL
+    + t('email_review') + NL + divider
+    + qaLines + divider
+    + t('email_footer');
+
+  const subject = encodeURIComponent(t('email_subject_prefix') + ' - ' + name + ' - ' + score + '% - ' + resultTxt);
+  window.location.href = 'mailto:dcl-sno-service@duracell.com?subject=' + subject + '&body=' + encodeURIComponent(bodyText);
+}
+
+// ═══════════════════════════════════════════════
+// EMAIL RESULT SUMMARY
+// ═══════════════════════════════════════════════
+function sendResultEmail(score, pass, correct) {
+  const v         = visitorData;
+  const name      = (v.fullName || '').trim();
+  const company   = v.company  || '—';
+  const date      = v.date     || new Date().toISOString().split('T')[0];
+  const host      = v.host     || '—';
+  const purpose   = v.purpose  || '—';
+  const letters   = ['A','B','C','D'];
+  const resultTxt = pass ? t('email_passed') : t('email_failed');
+  const NL        = '\r\n';
+  const sep       = '-'.repeat(80);
+  const pool      = T[lang].questions || T.en.questions;
+
+  let plainRows = '';
+  examQuestionIndices.forEach(function(qIdx, i) {
+    var q = pool[qIdx]; if(!q) return;
+    const answered   = examAnswers[i] !== null;
+    const isCorrect  = answered && examAnswers[i] === q.ans;
+    const noAns      = lang==='zh' ? '（未作答）' : '(no answer)';
+    const yourAns    = answered ? letters[examAnswers[i]] + '. ' + q.opts[examAnswers[i]] : noAns;
+    const correctAns = letters[q.ans] + '. ' + q.opts[q.ans];
+    plainRows += 'Q' + (i+1) + '. ' + q.q + NL
+      + '   ' + t('email_your_ans') + ' ' + yourAns + NL
+      + '   ' + t('email_correct_ans') + ' ' + correctAns + NL
+      + '   ' + t('email_result_lbl') + ' ' + (isCorrect ? t('email_correct_mark') : t('email_incorrect_mark')) + NL
+      + sep + NL;
+  });
+
+  const mailBody =
+    t('email_title') + NL
+    + t('email_divider') + NL
+    + t('email_name') + ' ' + name + NL
+    + t('email_company') + ' ' + company + NL
+    + t('email_date') + ' ' + date + NL
+    + t('email_host') + ' ' + host + NL
+    + t('email_purpose') + ' ' + purpose + NL
+    + t('email_attempt') + ' ' + examAttempt + NL
+    + t('email_score') + ' ' + score + '% (' + correct + '/' + examQuestions.length + ' ' + t('email_correct') + ') — ' + resultTxt + NL
+    + t('email_lang') + ' ' + (lang==='zh' ? '中文' : 'EN') + NL
+    + t('email_submitted') + ' ' + new Date().toLocaleString() + NL
+    + t('email_divider') + NL + NL
+    + t('email_review') + NL + sep + NL
+    + plainRows + NL
+    + t('email_footer');
+
+  const subject = encodeURIComponent(t('email_subject_prefix') + ' — ' + name + ' — ' + score + '% — ' + resultTxt);
+  window.location.href = 'mailto:dcl-sno-service@duracell.com?subject=' + subject + '&body=' + encodeURIComponent(mailBody);
+}
+
+// ═══════════════════════════════════════════════
+// ONCLICK WRAPPERS  (avoids double quotes in HTML)
+// ═══════════════════════════════════════════════
+function setLangEN(){ setLang('en'); }
+function setLangZH(){ setLang('zh'); }
+function switchTabVideo(){ switchTab('video'); }
+function switchTabSlides(){ switchTab('slides'); }
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+$el('fDate').valueAsDate=new Date();
+applyTranslations();
+</script>
+</body>
+</html>
