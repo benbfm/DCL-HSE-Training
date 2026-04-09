@@ -169,6 +169,17 @@
 
   .video-wrap { position:relative; background:#000; border-radius:8px; overflow:hidden; margin-bottom:12px; width:100%; aspect-ratio:16/9; }
   .video-wrap video { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; display:block; }
+
+  /* Video loading overlay */
+  .video-loader { position:absolute; inset:0; background:rgba(0,0,0,.78); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; z-index:10; transition:opacity .4s; }
+  .video-loader.hidden { opacity:0; pointer-events:none; }
+  .vl-spinner { width:44px; height:44px; border:4px solid rgba(255,184,48,.25); border-top-color:#FFB830; border-radius:50%; animation:vl-spin .8s linear infinite; }
+  @keyframes vl-spin { to { transform:rotate(360deg); } }
+  .vl-text { display:flex; flex-direction:column; align-items:center; gap:6px; }
+  .vl-text #vlLabel { font-family:'Barlow Condensed',sans-serif; font-size:13px; letter-spacing:1px; color:#e0c090; text-transform:uppercase; }
+  .vl-bar-wrap { width:180px; height:6px; background:rgba(255,255,255,.15); border-radius:3px; overflow:hidden; }
+  .vl-bar-fill { height:100%; width:0%; background:linear-gradient(90deg,var(--copper),var(--gold-light)); border-radius:3px; transition:width .3s ease; }
+  .vl-text #vlPct { font-family:'Barlow Condensed',sans-serif; font-size:12px; color:#b09060; letter-spacing:1px; }
   .video-ctrl { display:none; }
   .vc-playbtn { width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg,#FFB830,#E8920A); border:none; cursor:pointer; flex-shrink:0; font-size:14px; color:#fff; display:flex; align-items:center; justify-content:center; transition:transform .15s; }
   .vc-playbtn:hover { transform:scale(1.1); }
@@ -358,7 +369,7 @@
       </select>
       <span class='field-error' id='err-purpose'></span>
     </div>
-    <div class='form-group'><label for='fHost' data-i18n='lbl_host'>DCL Host *</label><input type='text' id='fHost' data-i18n-ph='ph_host'><span class='field-error' id='err-host'></span></div>
+    <div class='form-group'><label for='fHost' data-i18n='lbl_host'>DCL Host *</label><input type='email' id='fHost' data-i18n-ph='ph_host'><span class='field-error' id='err-host'></span></div>
     <div class='form-group'>
       <label for='fDept' data-i18n='lbl_dept'>Department</label>
       <select id='fDept'>
@@ -406,9 +417,21 @@
         src='https://raw.githubusercontent.com/benbfm/DCL-HSE-Training/main/HSE.mp4'
         onloadedmetadata='onVideoLoaded()'
         ontimeupdate='onVideoProgress()'
-        onended='onVideoEnded()'>
+        onended='onVideoEnded()'
+        onprogress='onVideoBuffering()'
+        onwaiting='showVideoLoader()'
+        oncanplay='hideVideoLoader()'>
         Your browser does not support the video tag.
       </video>
+      <!-- Loading overlay -->
+      <div id='videoLoader' class='video-loader'>
+        <div class='vl-spinner'></div>
+        <div class='vl-text'>
+          <span id='vlLabel'>Loading video…</span>
+          <div class='vl-bar-wrap'><div class='vl-bar-fill' id='vlBarFill'></div></div>
+          <span id='vlPct'>0%</span>
+        </div>
+      </div>
       </div><!-- /video-wrap -->
       <!-- Custom controls — no draggable progress bar -->
       <div class='video-ctrl'>
@@ -525,7 +548,7 @@ en:{
   lbl_vehicle:'Vehicle Plate (if applicable)', ph_vehicle:'e.g. AB12 CDE',
   lbl_date:'Visit Date *',
   lbl_purpose:'Purpose of Visit *',
-  lbl_host:'DCL Host / Contact Person *', ph_host:'Name of person you are visiting',
+  lbl_host:'DCL Host / Contact Person *', ph_host:'host@duracell.com',
   lbl_dept:'Department to Visit',
   lbl_health:'Special Health Conditions', ph_health:'e.g. asthma, latex allergy (optional)',
   lbl_emergency:'Emergency Contact Name & Number *', ph_emergency:'e.g. Jane Smith – +1 555 111 2222',
@@ -547,7 +570,7 @@ en:{
   err_id:'ID / Passport number is required', err_company:'Company is required',
   err_email:'Valid email is required', err_email_fmt:'Invalid email format',
   err_phone:'Phone number is required', err_date:'Visit date is required',
-  err_purpose:'Purpose of visit is required', err_host:'Host name is required',
+  err_purpose:'Purpose of visit is required', err_host:'A valid @duracell.com email is required',
   err_emergency:'Emergency contact is required', err_ack:'Please accept all safety acknowledgements',
   train_title:'Safety Training',
   train_sub:'Complete the video training or review the presentation slides. Finish at least one before proceeding to the exam.',
@@ -589,6 +612,13 @@ en:{
   email_title:'Duracell DCL – Visitor Safety Exam Result',
   email_divider:'===========================================',
   email_name:'Visitor Name  :',
+  email_id:'ID / Passport :',
+  email_email:'Email         :',
+  email_phone:'Phone         :',
+  email_vehicle:'Vehicle Plate :',
+  email_dept:'Department    :',
+  email_health:'Health Cond.  :',
+  email_emergency:'Emerg. Contact:',
   email_company:'Company       :',
   email_date:'Visit Date    :',
   email_host:'Host          :',
@@ -680,7 +710,7 @@ zh:{
   lbl_vehicle:'车牌号（如适用）', ph_vehicle:'例：粤 A 12345',
   lbl_date:'到访日期 *',
   lbl_purpose:'到访目的 *',
-  lbl_host:'DCL 接待人 *', ph_host:'请填写您拜访对象的姓名',
+  lbl_host:'DCL 接待人 *', ph_host:'host@duracell.com',
   lbl_dept:'到访部门',
   lbl_health:'特殊健康状况', ph_health:'例：哮喘、乳胶过敏（可选填）',
   lbl_emergency:'紧急联系人姓名与电话 *', ph_emergency:'例：张丽 – 138-0000-0000',
@@ -702,7 +732,7 @@ zh:{
   err_id:'请填写身份证 / 护照号码', err_company:'请填写公司名称',
   err_email:'请填写有效的电子邮件', err_email_fmt:'电子邮件格式不正确',
   err_phone:'请填写联系电话', err_date:'请选择到访日期',
-  err_purpose:'请选择到访目的', err_host:'请填写接待人姓名',
+  err_purpose:'请选择到访目的', err_host:'请填写有效的 @duracell.com 邮箱地址',
   err_emergency:'请填写紧急联系人信息', err_ack:'请勾选所有安全确认项',
   train_title:'安全培训',
   train_sub:'请完成视频培训或查看幻灯片演示。至少完成其中一项方可参加考试。',
@@ -744,6 +774,13 @@ zh:{
   email_title:'杜瑞尔 DCL – 访客安全考试结果',
   email_divider:'===========================================',
   email_name:'访客姓名      :',
+  email_id:'证件号码      :',
+  email_email:'电子邮件      :',
+  email_phone:'联系电话      :',
+  email_vehicle:'车牌号码      :',
+  email_dept:'到访部门      :',
+  email_health:'健康状况      :',
+  email_emergency:'紧急联系人    :',
   email_company:'公司          :',
   email_date:'到访日期      :',
   email_host:'接待人        :',
@@ -951,17 +988,53 @@ function submitForm() {
     const errEmail=$el('err-email'); if(errEmail) errEmail.textContent=t('err_email_fmt');
     errs.push(t('err_email_fmt'));
   }
+  const hostEl=$el('fHost');
+  if(!hostEl.value.trim() || !/^[^\s@]+@duracell\.com$/i.test(hostEl.value.trim())){
+    hostEl.classList.add('error');
+    const errHost=$el('err-host'); if(errHost) errHost.textContent=t('err_host');
+    if(!errs.includes(t('err_host'))) errs.push(t('err_host'));
+  }
   if(!['ack1','ack2','ack3','ack4'].every(id=>$el(id).checked)) errs.push(t('err_ack'));
   const al=$el('form-alert');
   if(errs.length){ $el('form-alert-msg').textContent=errs[0]; al.style.display='flex'; return; }
   al.style.display='none';
   visitorData={
     fullName:$el('fFullName').value.trim(),
+    idNum:$el('fIdNum').value.trim(),
     company:$el('fCompany').value.trim(),     email:$el('fEmail').value.trim(),
     phone:$el('fPhone').value.trim(),         date:$el('fDate').value,
+    vehicle:$el('fVehicle').value.trim(),
     purpose:$el('fPurpose').value,            host:$el('fHost').value.trim(),
+    dept:$el('fDept').value.trim(),           health:$el('fHealth').value.trim(),
+    emergency:$el('fEmergency').value.trim(),
   };
   goTo(2);
+}
+
+function showVideoLoader() {
+  const loader = $el('videoLoader');
+  if(loader) loader.classList.remove('hidden');
+}
+function hideVideoLoader() {
+  const loader = $el('videoLoader');
+  if(loader) loader.classList.add('hidden');
+}
+function onVideoBuffering() {
+  const vid = $vid();
+  if(!vid) return;
+  const loader = $el('videoLoader');
+  const bar = $el('vlBarFill');
+  const pct = $el('vlPct');
+  const lbl = $el('vlLabel');
+  if(!vid.duration) return;
+  // Calculate buffered %
+  let bufferedEnd = 0;
+  if(vid.buffered.length > 0) bufferedEnd = vid.buffered.end(vid.buffered.length - 1);
+  const bufferedPct = Math.min(100, Math.round((bufferedEnd / vid.duration) * 100));
+  if(bar) bar.style.width = bufferedPct + '%';
+  if(pct) pct.textContent = bufferedPct + '%';
+  if(lbl) lbl.textContent = bufferedPct < 100 ? (lang==='zh' ? '视频加载中…' : 'Loading video…') : (lang==='zh' ? '视频已就绪' : 'Ready');
+  if(bufferedPct >= 100 && loader) loader.classList.add('hidden');
 }
 
 function onVideoLoaded() {
@@ -1340,13 +1413,21 @@ function submitToService() {
   */
   const qaLines = '';
 
+  const v2 = visitorData;
   const bodyText =
     t('email_title') + NL + divider
     + t('email_name') + ' ' + name + NL
+    /* HIDDEN: ID field excluded from email + t('email_id') + ' ' + (v2.idNum||'—') + NL */
     + t('email_company') + ' ' + company + NL
+    + t('email_email') + ' ' + (v2.email||'—') + NL
+    /* HIDDEN: Phone field excluded from email + t('email_phone') + ' ' + (v2.phone||'—') + NL */
+    + t('email_vehicle') + ' ' + (v2.vehicle||'—') + NL
     + t('email_date') + ' ' + date + NL
-    + t('email_host') + ' ' + host + NL
     + t('email_purpose') + ' ' + purpose + NL
+    + t('email_host') + ' ' + host + NL
+    + t('email_dept') + ' ' + (v2.dept||'—') + NL
+    + t('email_health') + ' ' + (v2.health||'—') + NL
+    + t('email_emergency') + ' ' + (v2.emergency||'—') + NL
     + t('email_attempt') + ' ' + examAttempt + NL
     + t('email_score') + ' ' + score + '% (' + correctCount + '/' + examQuestions.length + ' ' + t('email_correct') + ')' + NL
     + t('email_result') + ' ' + resultTxt + NL
@@ -1401,10 +1482,17 @@ function sendResultEmail(score, pass, correct) {
     t('email_title') + NL
     + t('email_divider') + NL
     + t('email_name') + ' ' + name + NL
+    /* HIDDEN: ID field excluded from email + t('email_id') + ' ' + (v.idNum||'—') + NL */
     + t('email_company') + ' ' + company + NL
+    + t('email_email') + ' ' + (v.email||'—') + NL
+    /* HIDDEN: Phone field excluded from email + t('email_phone') + ' ' + (v.phone||'—') + NL */
+    + t('email_vehicle') + ' ' + (v.vehicle||'—') + NL
     + t('email_date') + ' ' + date + NL
-    + t('email_host') + ' ' + host + NL
     + t('email_purpose') + ' ' + purpose + NL
+    + t('email_host') + ' ' + host + NL
+    + t('email_dept') + ' ' + (v.dept||'—') + NL
+    + t('email_health') + ' ' + (v.health||'—') + NL
+    + t('email_emergency') + ' ' + (v.emergency||'—') + NL
     + t('email_attempt') + ' ' + examAttempt + NL
     + t('email_score') + ' ' + score + '% (' + correct + '/' + examQuestions.length + ' ' + t('email_correct') + ') — ' + resultTxt + NL
     + t('email_lang') + ' ' + (lang==='zh' ? '中文' : 'EN') + NL
