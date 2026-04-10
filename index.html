@@ -5,6 +5,8 @@
 <meta name='viewport' content='width=device-width, initial-scale=1.0'>
 <title>Duracell DCL – Visitor Management System</title>
 <link href='https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500;600&family=Noto+Sans+SC:wght@300;400;500;700&display=swap' rel='stylesheet'>
+<script src='https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js'></script>
+<script src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'></script>
 <style>
   :root {
     --copper:#B85A14; --gold:#E8920A; --gold-light:#FFB830;
@@ -508,7 +510,10 @@
         <div class='pass-field'><span class='pass-label' data-i18n='pass_purpose'>Purpose</span><span id='passPurpose'>—</span></div>
         <div class='pass-field'><span class='pass-label' data-i18n='pass_host'>Host</span><span id='passHost'>—</span></div>
       </div>
-      <div class='pass-qr' id='passQR'></div>
+      <div class='pass-qr' id='passQR' style='width:100px;height:100px;margin:14px auto 0;background:#fff;padding:4px;border-radius:6px;border:1px solid var(--card-border);display:flex;align-items:center;justify-content:center;overflow:hidden'></div>
+      <div style='margin-top:8px;font-size:10px;color:var(--text-dim);letter-spacing:1px;text-align:center'>
+        <span data-i18n='pass_uid'>Visitor ID</span>: <strong id='passUID' style='color:var(--copper);font-family:"Barlow Condensed",sans-serif;font-size:13px;letter-spacing:2px'>—</strong>
+      </div>
     </div>
     <div class='alert alert-success' style='max-width:480px;margin:0 auto 18px;text-align:left'><span>✅</span><div id='nextStepsText'></div></div>
     <div class='btn-row'>
@@ -608,7 +613,7 @@ en:{
   pass_valid:'Valid Until', pass_date:'Visit Date',
   pass_score:'Exam Score', pass_purpose:'Purpose', pass_host:'Host',
   next_steps:'<strong>Next Steps:</strong><br>1. Present this screen to the security desk<br>2. Collect your visitor badge & PPE kit<br>3. Wait for your DCL host in reception<br>4. Do not enter restricted areas without escort',
-  btn_print:'🖨 Print Pass', btn_new_visitor:'Register New Visitor →',
+  btn_print:'🖨 Print Pass', btn_new_visitor:'Register New Visitor →', pass_uid:'Visitor ID',
   email_title:'Duracell DCL – Visitor Safety Exam Result',
   email_divider:'===========================================',
   email_name:'Visitor Name  :',
@@ -770,7 +775,7 @@ zh:{
   pass_valid:'有效期至', pass_date:'到访日期',
   pass_score:'考试成绩', pass_purpose:'到访目的', pass_host:'接待人',
   next_steps:'<strong>后续步骤：</strong><br>1. 将此页面出示给保安<br>2. 领取纸质访客证及个人防护装备<br>3. 在接待区等候 DCL 接待人<br>4. 未有人陪同时严禁进入限制区域',
-  btn_print:'🖨 打印访客证', btn_new_visitor:'登记新访客 →',
+  btn_print:'🖨 打印访客证', btn_new_visitor:'登记新访客 →', pass_uid:'访客编号',
   email_title:'杜瑞尔 DCL – 访客安全考试结果',
   email_divider:'===========================================',
   email_name:'访客姓名      :',
@@ -871,8 +876,9 @@ function setTrainingStatus(done) {
     if (btn) btn.disabled = false;
   } else {
     ts.className = 'alert alert-warn';
-    const sp = ts.querySelector('span:last-child');
-    if (sp) sp.textContent = t('train_pending');
+    ts.innerHTML = '<span>⏳</span><span>' + t('train_pending') + '</span>';
+    const btn = $el('btnToExam');
+    if (btn) btn.disabled = true;
   }
 }
 
@@ -1278,32 +1284,41 @@ function submitExam() {
   $el('examNav').style.display='none';
   visitorData.examScore=score;
 
-  // Send email on both pass and fail
-  sendResultEmail(score, pass, correct);
+  // Send email only on pass
+  if (pass) {
+    // Generate UID now so it's ready for both pass card and email
+    if(!visitorData.uid) visitorData.uid = generateUID();
+    // Populate pass card first so QR can render and be captured as base64
+    goTo(4);
+    // Wait for QR to fully render and base64 to be captured, then send email
+    setTimeout(function(){
+      sendResultEmail(score, pass, correct);
+    }, 1200);
+  }
 
-  var circleClass = pass ? 'pass' : 'fail';
-  var scoreColor  = pass ? '#1E7E34' : '#C0392B';
-  var headColor   = pass ? 'var(--green)' : 'var(--red)';
-  var btnHtml = pass
-    ? `<button class='btn btn-primary' onclick='setTimeout(function(){goTo(4)},400)'>${t('btn_complete_onboard')}</button>`
-    : `<button class='btn btn-secondary' onclick='goTo(2)'>${t('btn_restudy')}</button>`
+  if (!pass) {
+    var circleClass = 'fail';
+    var scoreColor  = '#C0392B';
+    var headColor   = 'var(--red)';
+    var btnHtml = `<button class='btn btn-secondary' onclick='goTo(2)'>${t('btn_restudy')}</button>`
       + `<button class='btn btn-primary' onclick='initExam()'>${t('btn_retake')}</button>`;
-  var scoreHtml = `
-    <div class='score-display'>
-      <div class='score-circle ${circleClass}'>
-        <span class='score-num' style='color:${scoreColor}'>${score}%</span>
-        <span class='score-label'>${t(pass ? 'score_passed' : 'score_failed')}</span>
-      </div>
-      <h3 style='font-size:clamp(18px,4vw,24px);color:${headColor};letter-spacing:2px;margin-bottom:8px'>
-        ${t(pass ? 'score_congrats' : 'score_fail_msg')}
-      </h3>
-      <p style='color:var(--text-dim);font-size:14px;max-width:480px;width:100%;margin:0 auto 22px;box-sizing:border-box;padding:0 4px'>
-        ${t(pass ? 'score_pass_detail' : 'score_fail_detail', {c: correct, t: examQuestions.length})}
-      </p>
-      <div class='btn-row'>${btnHtml}</div>
-    </div>`;
-  $el('scorePanel').style.display = 'block';
-  $el('scorePanel').innerHTML = scoreHtml;
+    var scoreHtml = `
+      <div class='score-display'>
+        <div class='score-circle ${circleClass}'>
+          <span class='score-num' style='color:${scoreColor}'>${score}%</span>
+          <span class='score-label'>${t('score_failed')}</span>
+        </div>
+        <h3 style='font-size:clamp(18px,4vw,24px);color:${headColor};letter-spacing:2px;margin-bottom:8px'>
+          ${t('score_fail_msg')}
+        </h3>
+        <p style='color:var(--text-dim);font-size:14px;max-width:480px;width:100%;margin:0 auto 22px;box-sizing:border-box;padding:0 4px'>
+          ${t('score_fail_detail', {c: correct, t: examQuestions.length})}
+        </p>
+        <div class='btn-row'>${btnHtml}</div>
+      </div>`;
+    $el('scorePanel').style.display = 'block';
+    $el('scorePanel').innerHTML = scoreHtml;
+  }
 }
 
 
@@ -1322,11 +1337,62 @@ function populatePass() {
   buildQR();
 }
 
-function buildQR() {
+function generateUID() {
+  // Format: DCL-YYYYMMDD-XXXXX (date + 5 random alphanumeric chars)
+  const now = new Date();
+  const datePart = now.getFullYear().toString()
+    + String(now.getMonth()+1).padStart(2,'0')
+    + String(now.getDate()).padStart(2,'0');
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let rand = '';
+  for(let i=0;i<5;i++) rand += chars[Math.floor(Math.random()*chars.length)];
+  return 'DCL-' + datePart + '-' + rand;
+}
+
+function populatePass() {
+  const v=visitorData;
+  // Generate and store unique visitor ID
+  if(!v.uid) v.uid = generateUID();
+  $el('passName').textContent=(v.fullName||'').toUpperCase();
+  $el('passCompany').textContent=v.company||'—';
+  $el('passDate').textContent=v.date||'—';
+  $el('passScore').textContent=(v.examScore||'—')+'%';
+  $el('passPurpose').textContent=v.purpose||'—';
+  $el('passHost').textContent=v.host||'—';
+  $el('passUID').textContent=v.uid;
+  const dt=v.date?new Date(v.date):new Date();
+  dt.setDate(dt.getDate()+30);
+  $el('passValidUntil').textContent=dt.toLocaleDateString();
+  $el('nextStepsText').innerHTML=t('next_steps');
+  buildQR(v.uid);
+}
+
+function buildQR(uid) {
   const qr=$el('passQR');
   qr.innerHTML='';
-  [1,1,1,0,1,1,1,1,0,1,0,1,0,1,1,1,1,1,0,1,1,0,1,0,1,0,0,1,1,1,0,0,1,1,0,1,0,1,0,0,1,0,0,1,1,1,0,0,1]
-    .forEach(v=>{const d=document.createElement('div');d.className=v?'qr-cell':'qr-cell w';qr.appendChild(d);});
+  const url='https://apps.powerapps.com/play/e/default-82f26667-2afe-4c78-b49d-6d0619d6a76d/a/8764fa64-8455-4ddb-aad1-5fe1bb56cbde?tenantId=82f26667-2afe-4c78-b49d-6d0619d6a76d&hint=6ee57b61-5d70-479b-bdff-fbd05f437d59&hidenavbar=true&sourcetime=1742537686508&myid='+encodeURIComponent(uid);
+  try {
+    new QRCode(qr, {
+      text: url,
+      width: 90,
+      height: 90,
+      colorDark: '#1A1008',
+      colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.M
+    });
+    // Capture QR as base64 after a short delay to ensure rendering is complete
+    setTimeout(function(){
+      const canvas = qr.querySelector('canvas');
+      const img    = qr.querySelector('img');
+      if(canvas) {
+        visitorData.qrBase64 = canvas.toDataURL('image/png');
+      } else if(img) {
+        visitorData.qrBase64 = img.src; // already base64 data URL
+      }
+    }, 300);
+  } catch(e) {
+    qr.textContent = uid;
+  }
 }
 
 function printPass(){ window.print(); }
@@ -1392,9 +1458,12 @@ function startNew() {
   if(examPLabel) examPLabel.textContent='0 / 10';
 
   // ── Reset training status ──
-  $el('btnToExam').disabled=true;
+  trainingDone = false;
+  videoWatched = false;
   const ts=$el('training-status');
-  if(ts){ ts.className='alert alert-warn'; ts.innerHTML="<span>⏳</span><span data-i18n='train_pending'>"+t('train_pending')+"</span>"; }
+  if(ts){ ts.className='alert alert-warn'; ts.innerHTML='<span>⏳</span><span>'+t('train_pending')+'</span>'; }
+  const btnExam=$el('btnToExam');
+  if(btnExam) btnExam.disabled=true;
   const watchedBadge=$el('videoWatchedBadge');
   if(watchedBadge) watchedBadge.style.display='none';
   const progWrap=document.querySelector('.progress-bar-wrap .progress-bar-fill');
@@ -1422,74 +1491,7 @@ function preventSeek() {
 }
 
 
-// ═══════════════════════════════════════════════
-// SUBMIT RESULT TO SERVICE
-// ═══════════════════════════════════════════════
-function submitToService() {
-  const v = visitorData;
-  const name      = (v.fullName || '').trim();
-  const company   = v.company  || '-';
-  const date      = v.date     || new Date().toISOString().split('T')[0];
-  const host      = v.host     || '-';
-  const purpose   = v.purpose  || '-';
-  const score     = v.examScore !== undefined ? v.examScore : '-';
-  const pass      = typeof score === 'number' && score >= 80;
-  const resultTxt = pass ? t('email_passed') : t('email_failed');
-  const letters   = ['A','B','C','D'];
-  const NL        = String.fromCharCode(13,10);
-  const pool      = T[lang].questions || T.en.questions;
-  const correctCount = examQuestionIndices.filter(function(qIdx,i){
-    var q = pool[qIdx]; return q && examAnswers[i]===q.ans;
-  }).length;
-  const divider = '=======================================' + NL;
 
-  /* HIDDEN: Q&A loop kept in source but output suppressed
-  let qaLines = '';
-  examQuestionIndices.forEach(function(qIdx, i) {
-    var q = pool[qIdx]; if(!q) return;
-    const answered   = examAnswers[i] !== null;
-    const isCorrect  = answered && examAnswers[i] === q.ans;
-    const noAns      = lang==='zh' ? '（未作答）' : '(no answer)';
-    const yourAns    = answered ? letters[examAnswers[i]] + '. ' + q.opts[examAnswers[i]] : noAns;
-    const correctAns = letters[q.ans] + '. ' + q.opts[q.ans];
-    qaLines += (i+1) + '. ' + q.q + NL
-      + '   ' + t('email_your_ans') + ' ' + yourAns + NL
-      + '   ' + t('email_correct_ans') + ' ' + correctAns + NL
-      + '   ' + t('email_result_lbl') + ' ' + (isCorrect ? t('email_correct_mark') : t('email_incorrect_mark')) + NL + NL;
-  });
-  */
-  const qaLines = '';
-
-  const v2 = visitorData;
-  const bodyText =
-    t('email_title') + NL + divider
-    + t('email_name') + ' ' + name + NL
-    // + t('email_id') + ' ' + (v2.idNum||'—') + NL   /* HIDDEN: ID excluded from email */
-    + t('email_company') + ' ' + company + NL
-    + t('email_email') + ' ' + (v2.email||'—') + NL
-    // + t('email_phone') + ' ' + (v2.phone||'—') + NL   /* HIDDEN: Phone excluded from email */
-    + t('email_vehicle') + ' ' + (v2.vehicle||'—') + NL
-    + t('email_date') + ' ' + date + NL
-    + t('email_purpose') + ' ' + purpose + NL
-    + t('email_host') + ' ' + host + NL
-    + t('email_dept') + ' ' + (v2.dept||'—') + NL
-    + t('email_health') + ' ' + (v2.health||'—') + NL
-    + t('email_emergency') + ' ' + (v2.emergency||'—') + NL
-    + t('email_attempt') + ' ' + examAttempt + NL
-    + t('email_score') + ' ' + score + '% (' + correctCount + '/' + examQuestions.length + ' ' + t('email_correct') + ')' + NL
-    + t('email_result') + ' ' + resultTxt + NL
-    + t('email_lang') + ' ' + (lang==='zh' ? '中文' : 'EN') + NL
-    + t('email_submitted') + ' ' + new Date().toLocaleString() + NL
-    /* HIDDEN: exam Q&A detail removed from email but kept in source
-    + divider + NL
-    + t('email_review') + NL + divider
-    + qaLines + divider
-    */
-    + t('email_footer');
-
-  const subject = encodeURIComponent(t('email_subject_prefix') + ' - ' + name + ' - ' + score + '% - ' + resultTxt);
-  window.location.href = 'mailto:dcl-sno-service@duracell.com?subject=' + subject + '&body=' + encodeURIComponent(bodyText);
-}
 
 // ═══════════════════════════════════════════════
 // EMAIL RESULT SUMMARY
@@ -1507,32 +1509,23 @@ function sendResultEmail(score, pass, correct) {
   const sep       = '-'.repeat(80);
   const pool      = T[lang].questions || T.en.questions;
 
-  /* HIDDEN: Q&A loop kept in source but output suppressed
-  let plainRows = '';
-  examQuestionIndices.forEach(function(qIdx, i) {
-    var q = pool[qIdx]; if(!q) return;
-    const answered   = examAnswers[i] !== null;
-    const isCorrect  = answered && examAnswers[i] === q.ans;
-    const noAns      = lang==='zh' ? '（未作答）' : '(no answer)';
-    const yourAns    = answered ? letters[examAnswers[i]] + '. ' + q.opts[examAnswers[i]] : noAns;
-    const correctAns = letters[q.ans] + '. ' + q.opts[q.ans];
-    plainRows += 'Q' + (i+1) + '. ' + q.q + NL
-      + '   ' + t('email_your_ans') + ' ' + yourAns + NL
-      + '   ' + t('email_correct_ans') + ' ' + correctAns + NL
-      + '   ' + t('email_result_lbl') + ' ' + (isCorrect ? t('email_correct_mark') : t('email_incorrect_mark')) + NL
-      + sep + NL;
-  });
-  */
-  const plainRows = '';
+  const reviewLabel    = lang==='zh' ? '答题回顾'    : 'QUESTION REVIEW';
+  const yourAnsLabel   = lang==='zh' ? '您的答案'    : 'Your Answer';
+  const correctAnsLabel= lang==='zh' ? '正确答案'    : 'Correct Answer';
+  const resultLabel    = lang==='zh' ? '结果'        : 'Result';
+  const qLabel         = lang==='zh' ? '题目'        : 'Question';
+  const correctMark    = lang==='zh' ? '正确 ✓'     : 'Correct ✓';
+  const wrongMark      = lang==='zh' ? '错误 ✗'     : 'Wrong ✗';
+  const noAns          = lang==='zh' ? '（未作答）'  : '(no answer)';
+  const noLabel        = '#';
 
-  const mailBody =
-    t('email_title') + NL
+  // Plain text summary
+  const plainSummary =
+      t('email_title') + NL
     + t('email_divider') + NL
     + t('email_name') + ' ' + name + NL
-    // + t('email_id') + ' ' + (v.idNum||'—') + NL   /* HIDDEN: ID excluded from email */
     + t('email_company') + ' ' + company + NL
     + t('email_email') + ' ' + (v.email||'—') + NL
-    // + t('email_phone') + ' ' + (v.phone||'—') + NL   /* HIDDEN: Phone excluded from email */
     + t('email_vehicle') + ' ' + (v.vehicle||'—') + NL
     + t('email_date') + ' ' + date + NL
     + t('email_purpose') + ' ' + purpose + NL
@@ -1542,14 +1535,26 @@ function sendResultEmail(score, pass, correct) {
     + t('email_emergency') + ' ' + (v.emergency||'—') + NL
     + t('email_attempt') + ' ' + examAttempt + NL
     + t('email_score') + ' ' + score + '% (' + correct + '/' + examQuestions.length + ' ' + t('email_correct') + ') — ' + resultTxt + NL
+    + (lang==='zh' ? '访客编号      :' : 'Visitor ID    :') + ' ' + (v.uid||'—') + NL
     + t('email_lang') + ' ' + (lang==='zh' ? '中文' : 'EN') + NL
     + t('email_submitted') + ' ' + new Date().toLocaleString() + NL
-    /* HIDDEN: exam Q&A detail removed from email but kept in source
-    + t('email_divider') + NL + NL
-    + t('email_review') + NL + sep + NL
-    + plainRows + NL
-    */
     + t('email_footer');
+
+  // Build Q&A as markdown table
+  let qaMarkdown = NL + reviewLabel + NL + NL;
+  qaMarkdown += '| ' + noLabel + ' | ' + qLabel + ' | ' + yourAnsLabel + ' | ' + correctAnsLabel + ' | ' + resultLabel + ' |' + NL;
+  qaMarkdown += '|:---:|---|---|---|:---:|' + NL;
+  examQuestionIndices.forEach(function(qIdx, i) {
+    var q = pool[qIdx]; if(!q) return;
+    const answered  = examAnswers[i] !== null;
+    const isCorrect = answered && examAnswers[i] === q.ans;
+    const yourAns   = answered ? letters[examAnswers[i]] + '. ' + q.opts[examAnswers[i]] : noAns;
+    const corrAns   = letters[q.ans] + '. ' + q.opts[q.ans];
+    qaMarkdown += '| ' + (i+1) + ' | ' + q.q + ' | ' + yourAns + ' | ' + corrAns + ' | ' + (isCorrect ? correctMark : wrongMark) + ' |' + NL;
+  });
+
+  // Compose: plain text summary + markdown Q&A table
+  const mailBody = plainSummary + qaMarkdown;
 
   const subject = encodeURIComponent(t('email_subject_prefix') + ' — ' + name + ' — ' + score + '% — ' + resultTxt);
   const mailtoLink = 'mailto:dcl-sno-service@duracell.com?subject=' + subject + '&body=' + encodeURIComponent(mailBody);
