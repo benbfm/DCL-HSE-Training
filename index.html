@@ -1524,7 +1524,7 @@ function sendResultEmail(score, pass, correct) {
       t('email_title') + NL
     + t('email_divider') + NL
     + t('email_name') + ' ' + name + NL
-    + (lang==='zh' ? '访客编号      :' : 'Visitor ID    :') + ' ' + (v.uid||'—') + NL
+    + (lang==='zh' ? '访客编号      :' : 'Visitor ID    :') + ' ' + btoa(v.uid||'—') + NL
     + t('email_company') + ' ' + company + NL
     + t('email_email') + ' ' + (v.email||'—') + NL
     + t('email_vehicle') + ' ' + (v.vehicle||'—') + NL
