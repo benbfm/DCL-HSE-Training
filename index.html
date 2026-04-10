@@ -785,7 +785,7 @@ zh:{
   email_date:'到访日期      :',
   email_host:'接待人        :',
   email_purpose:'到访目的      :',
-  email_attempt:'第 {n} 次考试 :',
+  email_attempt:'考试次数      :',
   email_score:'考试成绩      :',
   email_correct:'题正确',
   email_result:'考试结果      :',
@@ -1278,14 +1278,14 @@ function submitExam() {
   $el('examNav').style.display='none';
   visitorData.examScore=score;
 
-  // Auto-send email only on pass
-  if (pass) sendResultEmail(score, pass, correct);
+  // Send email on both pass and fail
+  sendResultEmail(score, pass, correct);
 
   var circleClass = pass ? 'pass' : 'fail';
   var scoreColor  = pass ? '#1E7E34' : '#C0392B';
   var headColor   = pass ? 'var(--green)' : 'var(--red)';
   var btnHtml = pass
-    ? `<button class='btn btn-primary' onclick='goTo(4)'>${t('btn_complete_onboard')}</button>`
+    ? `<button class='btn btn-primary' onclick='setTimeout(function(){goTo(4)},400)'>${t('btn_complete_onboard')}</button>`
     : `<button class='btn btn-secondary' onclick='goTo(2)'>${t('btn_restudy')}</button>`
       + `<button class='btn btn-primary' onclick='initExam()'>${t('btn_retake')}</button>`;
   var scoreHtml = `
@@ -1343,16 +1343,63 @@ function resetVideoUI() {
   if(btn) btn.textContent='▶';
 }
 function startNew() {
+  // ── Reset all state variables ──
   visitorData={}; trainingDone=false; examQuestionIndices=[];
-  videoWatched=false; maxWatchedPct=0;
-  slidesSeenSet=new Set();
-  currentSlide=0;
+  videoWatched=false; maxWatchedPct=0; examAttempt=0;
+  examAnswers=[]; examQuestions=[]; currentQ=0;
+  slidesSeenSet=new Set(); currentSlide=0;
+  clearInterval(timerInterval);
+
+  // ── Reset video ──
   resetVideoUI();
+  const vid=$vid();
+  if(vid){ vid.pause(); vid.currentTime=0; vid.load(); }
+  showVideoLoader();
+  const vlBar=$el('vlBarFill'), vlPct=$el('vlPct'), vlLbl=$el('vlLabel');
+  if(vlBar) vlBar.style.width='0%';
+  if(vlPct) vlPct.textContent='0%';
+  if(vlLbl) vlLbl.textContent=(lang==='zh'?'视频加载中…':'Loading video…');
+
+  // ── Reset form fields ──
   ['fFullName','fIdNum','fCompany','fEmail','fPhone','fVehicle',
    'fDate','fHost','fHealth','fEmergency','fPurpose','fDept']
-    .forEach(id=>{ document.getElementById(id).value=''; });
+    .forEach(id=>{
+      const el=document.getElementById(id);
+      if(el){ el.value=''; el.classList.remove('error'); }
+    });
+  $el('fDate').valueAsDate=new Date();
   ['ack1','ack2','ack3','ack4'].forEach(id=>{document.getElementById(id).checked=false;});
+
+  // ── Clear field error messages ──
+  ['err-fullName','err-idNum','err-company','err-email','err-phone',
+   'err-date','err-purpose','err-host','err-emergency']
+    .forEach(id=>{ const el=$el(id); if(el) el.textContent=''; });
+  const al=$el('form-alert');
+  if(al){ al.style.display='none'; $el('form-alert-msg').textContent=''; }
+
+  // ── Reset exam UI ──
+  const qArea=$el('questionArea'), examNav=$el('examNav'), scorePanel=$el('scorePanel');
+  if(qArea)      { qArea.style.display='block'; qArea.innerHTML=''; }
+  if(examNav)    { examNav.style.display='none'; }
+  if(scorePanel) { scorePanel.style.display='none'; scorePanel.innerHTML=''; }
+  const examAttemptLabel=$el('examAttemptLabel');
+  if(examAttemptLabel) examAttemptLabel.textContent='';
+  const timerEl=$el('examTimer');
+  if(timerEl) timerEl.textContent='20:00';
+  const examPBar=$el('examProgressBar');
+  if(examPBar) examPBar.style.width='0%';
+  const examPLabel=$el('examProgressLabel');
+  if(examPLabel) examPLabel.textContent='0 / 10';
+
+  // ── Reset training status ──
   $el('btnToExam').disabled=true;
+  const ts=$el('training-status');
+  if(ts){ ts.className='alert alert-warn'; ts.innerHTML="<span>⏳</span><span data-i18n='train_pending'>"+t('train_pending')+"</span>"; }
+  const watchedBadge=$el('videoWatchedBadge');
+  if(watchedBadge) watchedBadge.style.display='none';
+  const progWrap=document.querySelector('.progress-bar-wrap .progress-bar-fill');
+  if(progWrap) progWrap.style.width='0%';
+
   goTo(0);
 }
 
@@ -1417,10 +1464,10 @@ function submitToService() {
   const bodyText =
     t('email_title') + NL + divider
     + t('email_name') + ' ' + name + NL
-    /* HIDDEN: ID field excluded from email + t('email_id') + ' ' + (v2.idNum||'—') + NL */
+    // + t('email_id') + ' ' + (v2.idNum||'—') + NL   /* HIDDEN: ID excluded from email */
     + t('email_company') + ' ' + company + NL
     + t('email_email') + ' ' + (v2.email||'—') + NL
-    /* HIDDEN: Phone field excluded from email + t('email_phone') + ' ' + (v2.phone||'—') + NL */
+    // + t('email_phone') + ' ' + (v2.phone||'—') + NL   /* HIDDEN: Phone excluded from email */
     + t('email_vehicle') + ' ' + (v2.vehicle||'—') + NL
     + t('email_date') + ' ' + date + NL
     + t('email_purpose') + ' ' + purpose + NL
@@ -1482,10 +1529,10 @@ function sendResultEmail(score, pass, correct) {
     t('email_title') + NL
     + t('email_divider') + NL
     + t('email_name') + ' ' + name + NL
-    /* HIDDEN: ID field excluded from email + t('email_id') + ' ' + (v.idNum||'—') + NL */
+    // + t('email_id') + ' ' + (v.idNum||'—') + NL   /* HIDDEN: ID excluded from email */
     + t('email_company') + ' ' + company + NL
     + t('email_email') + ' ' + (v.email||'—') + NL
-    /* HIDDEN: Phone field excluded from email + t('email_phone') + ' ' + (v.phone||'—') + NL */
+    // + t('email_phone') + ' ' + (v.phone||'—') + NL   /* HIDDEN: Phone excluded from email */
     + t('email_vehicle') + ' ' + (v.vehicle||'—') + NL
     + t('email_date') + ' ' + date + NL
     + t('email_purpose') + ' ' + purpose + NL
@@ -1505,7 +1552,17 @@ function sendResultEmail(score, pass, correct) {
     + t('email_footer');
 
   const subject = encodeURIComponent(t('email_subject_prefix') + ' — ' + name + ' — ' + score + '% — ' + resultTxt);
-  window.location.href = 'mailto:dcl-sno-service@duracell.com?subject=' + subject + '&body=' + encodeURIComponent(mailBody);
+  const mailtoLink = 'mailto:dcl-sno-service@duracell.com?subject=' + subject + '&body=' + encodeURIComponent(mailBody);
+  try {
+    const a = document.createElement('a');
+    a.href = mailtoLink;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function(){ document.body.removeChild(a); }, 1000);
+  } catch(e) {
+    window.location.href = mailtoLink;
+  }
 }
 
 // ═══════════════════════════════════════════════
