@@ -1524,6 +1524,7 @@ function sendResultEmail(score, pass, correct) {
       t('email_title') + NL
     + t('email_divider') + NL
     + t('email_name') + ' ' + name + NL
+    + (lang==='zh' ? '访客编号      :' : 'Visitor ID    :') + ' ' + (v.uid||'—') + NL
     + t('email_company') + ' ' + company + NL
     + t('email_email') + ' ' + (v.email||'—') + NL
     + t('email_vehicle') + ' ' + (v.vehicle||'—') + NL
@@ -1535,7 +1536,6 @@ function sendResultEmail(score, pass, correct) {
     + t('email_emergency') + ' ' + (v.emergency||'—') + NL
     + t('email_attempt') + ' ' + examAttempt + NL
     + t('email_score') + ' ' + score + '% (' + correct + '/' + examQuestions.length + ' ' + t('email_correct') + ') — ' + resultTxt + NL
-    + (lang==='zh' ? '访客编号      :' : 'Visitor ID    :') + ' ' + (v.uid||'—') + NL
     + t('email_lang') + ' ' + (lang==='zh' ? '中文' : 'EN') + NL
     + t('email_submitted') + ' ' + new Date().toLocaleString() + NL
     + t('email_footer');
@@ -1553,8 +1553,9 @@ function sendResultEmail(score, pass, correct) {
     qaMarkdown += '| ' + (i+1) + ' | ' + q.q + ' | ' + yourAns + ' | ' + corrAns + ' | ' + (isCorrect ? correctMark : wrongMark) + ' |' + NL;
   });
 
-  // Compose: plain text summary + markdown Q&A table
-  const mailBody = plainSummary + qaMarkdown;
+  // Compose: plain text summary + #### separator + markdown Q&A table
+  const separator = NL + '####' + NL;
+  const mailBody = plainSummary + separator + qaMarkdown;
 
   const subject = encodeURIComponent(t('email_subject_prefix') + ' — ' + name + ' — ' + score + '% — ' + resultTxt);
   const mailtoLink = 'mailto:dcl-sno-service@duracell.com?subject=' + subject + '&body=' + encodeURIComponent(mailBody);
