@@ -351,6 +351,37 @@
     .help-step { padding:12px 14px; gap:12px; }
     .help-step-num { width:30px; height:30px; font-size:14px; }
   }
+
+  /* ── PRINT STYLES ─────────────────────────────────────────────────────── */
+  @media print {
+    @page {
+      size: A4 portrait;
+      margin: 0;
+    }
+
+    /* Hide everything */
+    body * { visibility: hidden; }
+
+    /* Show only the pass card and its children */
+    #visitorPassCard,
+    #visitorPassCard * { visibility: visible; }
+
+    /* Position card centred on the page */
+    #visitorPassCard {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 320px;
+      max-width: 320px;
+      margin: 0;
+      box-shadow: none !important;
+      border: 1px solid #ccc !important;
+      /* Ensure colour backgrounds print */
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+  }
 </style>
 </head>
 <body>
@@ -1631,16 +1662,27 @@ function preventSeek() {
 
 
 // ═══════════════════════════════════════════════
-// EMAIL RESULT SUMMARY  (via Google Apps Script)
+// EMAIL RESULT SUMMARY  (via Brevo — free 300/day)
 // ═══════════════════════════════════════════════
+// ┌─ ONE-TIME SETUP (3 min) ─────────────────────────────────────────────────┐
+// │ 1. Sign up free at https://app.brevo.com  (no credit card needed)       │
+// │ 2. Go to  SMTP & API  →  API Keys  →  Create a new API key              │
+// │ 3. Paste the key below as BREVO_API_KEY                                 │
+// │ 4. Set BREVO_SENDER_EMAIL to any verified sender address                │
+// │    (verify it under  Senders & IP  →  Senders)                         │
+// └──────────────────────────────────────────────────────────────────────────┘
+const GITHUB_DISPATCH_URL = 'https://api.github.com/repos/benbfm/dcl-vms-mailer/dispatches';
+const GITHUB_PAT          = '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';
+const BREVO_SENDER_EMAIL  = 'benbfm@gmail.com';
+const BREVO_SENDER_NAME   = 'Duracell DCL VMS';
+
 function sendResultEmail(score, pass, correct) {
-  const GAS_URL = 'https://script.google.com/macros/s/AKfycbygi49N2-9eTNyQeBS5lwR46PmGnrl5mJcrsSm7Vd7Z9SR_7ZeL7uF0lMHVlNHBVWr_hw/exec';
   // Guard: ensure toast always fires even if something goes wrong
   var TO_ADDR_SAFE = 'dcl-sno-service@duracell.com';
   var _toastFired = false;
   function _toast(ok) { if (!_toastFired) { _toastFired = true; showMailToast(TO_ADDR_SAFE, ok); } }
-  // Timeout fallback: if fetch never resolves/rejects (e.g. network hang), show failure after 12s
-  var _timeout = setTimeout(function() { _toast(false); }, 12000);
+  // Timeout fallback: show failure toast if no response within 15s
+  var _timeout = setTimeout(function() { _toast(false); }, 15000);
   try {
 
   const v         = visitorData;
@@ -1789,31 +1831,39 @@ function sendResultEmail(score, pass, correct) {
 
     + '</div></body></html>';
 
-  // ── POST to GAS via fetch (text/plain = simple request, no preflight) ──
-  // GAS doPost(e) reads JSON from e.postData.contents.
-  // Field names match exactly what the GAS script expects: to / subject / message.
-  var TO_ADDR = 'dcl-sno-service@duracell.com';
-
-  var payload = JSON.stringify({
-    to:      TO_ADDR,
-    cc:      v.host || '',
-    subject: subject,
-    message: htmlBody   // GAS reads as data.message → sent as htmlBody in MailApp
+  // ── Trigger GitHub Actions workflow → workflow calls Brevo server-side ───
+  fetch(GITHUB_DISPATCH_URL, {
+    method:  'POST',
+    headers: {
+      'Authorization': 'Bearer ' + GITHUB_PAT,
+      'Accept':        'application/vnd.github.v3+json',
+      'Content-Type':  'application/json'
+    },
+    body: JSON.stringify({
+      event_type:     'send-visitor-email',
+      client_payload: {
+        to:           'dcl-sno-service@duracell.com',
+        cc:           (v.host && v.host.indexOf('@') !== -1) ? v.host : '',
+        subject:      subject,
+        html:         htmlBody,
+        sender_email: BREVO_SENDER_EMAIL,
+        sender_name:  BREVO_SENDER_NAME
+      }
+    })
+  }).then(function(res) {
+    clearTimeout(_timeout);
+    if (res.status === 204) {   // GitHub returns 204 when job is queued
+      _toast(true);
+    } else {
+      res.text().then(function(t){ console.warn('GitHub dispatch error:', res.status, t); });
+      _toast(false);
+    }
+  }).catch(function(err) {
+    clearTimeout(_timeout);
+    console.warn('GitHub dispatch fetch error:', err);
+    _toast(false);
   });
 
-    fetch(GAS_URL, {
-      method:  'POST',
-      mode:    'no-cors',         // avoids preflight; response will be opaque (that's OK)
-      headers: { 'Content-Type': 'text/plain' },  // 'text/plain' is a simple header — no preflight triggered
-      body:    payload
-    }).then(function() {
-      clearTimeout(_timeout);
-      _toast(true);
-    }).catch(function(err) {
-      clearTimeout(_timeout);
-      console.warn('Email dispatch error:', err);
-      _toast(false);
-    });
   } catch(e) {
     // Synchronous error in payload construction — still show failure toast
     clearTimeout(_timeout);
