@@ -27,7 +27,7 @@
   .header-titles p { font-size:11px; color:var(--text-dim); letter-spacing:2px; text-transform:uppercase; }
   .header-right { margin-left:auto; display:flex; align-items:center; gap:14px; }
   .lang-toggle { display:flex; align-items:center; background:var(--accent-bg); border-radius:20px; overflow:hidden; border:1.5px solid var(--card-border); }
-  .lang-btn { padding:6px 14px; background:none; border:none; cursor:pointer; font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:13px; letter-spacing:1px; color:var(--text-dim); transition:all .2s; white-space:nowrap; }
+  .lang-btn { padding:10px 14px; min-height:44px; background:none; border:none; cursor:pointer; font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:13px; letter-spacing:1px; color:var(--text-dim); transition:all .2s; white-space:nowrap; }
   .lang-btn.active { background:linear-gradient(135deg,var(--gold-light),var(--gold)); color:#fff; border-radius:18px; }
   .step-tracker { display:flex; flex-direction:row; align-items:center; gap:6px; flex-wrap:nowrap; }
   .step-dot { width:10px; height:10px; border-radius:50%; background:var(--accent-mid); transition:all .3s; }
@@ -62,7 +62,7 @@
   .btn { display:inline-flex; align-items:center; gap:8px; padding:13px 26px; border:none; border-radius:8px; font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:15px; letter-spacing:1px; text-transform:uppercase; cursor:pointer; transition:all .2s; }
   body.zh .btn { font-family:'Noto Sans SC',sans-serif; letter-spacing:2px; font-size:13px; }
   .btn-primary { background:linear-gradient(135deg,var(--gold-light),var(--gold)); color:#fff; box-shadow:0 4px 14px rgba(232,146,10,.35); }
-  .btn-primary:hover { transform:translateY(-2px); box-shadow:0 6px 22px rgba(232,146,10,.5); background:linear-gradient(135deg,var(--gold),var(--copper)); }
+  .btn-primary:hover, .btn-primary:active { transform:translateY(-2px); box-shadow:0 6px 22px rgba(232,146,10,.5); background:linear-gradient(135deg,var(--gold),var(--copper)); }
   .btn-secondary { background:var(--white); color:var(--text-main); border:1.5px solid var(--card-border); }
   .btn-secondary:hover { border-color:var(--copper); color:var(--copper); background:var(--accent-bg); }
   .btn-success { background:var(--green); color:var(--white); }
@@ -83,7 +83,7 @@
   select option { background:var(--white); color:var(--text-main); }
   .checkbox-group { display:flex; flex-direction:column; gap:10px; margin-bottom:18px; }
   .checkbox-item { display:flex; align-items:flex-start; gap:12px; background:var(--white); border:1.5px solid var(--card-border); border-radius:8px; padding:12px 14px; cursor:pointer; transition:all .2s; }
-  .checkbox-item:hover { border-color:var(--copper); background:var(--accent-bg); }
+  .checkbox-item:hover, .checkbox-item:active { border-color:var(--copper); background:var(--accent-bg); }
   .checkbox-item input[type='checkbox'] { width:18px; height:18px; margin-top:2px; flex-shrink:0; accent-color:var(--copper); }
   .checkbox-item span { font-size:13px; color:#5A3A18; line-height:1.6; }
   .checkbox-item span b { color:var(--text-main); }
@@ -261,9 +261,9 @@
     .screen-title { font-size:20px; }
     body.zh .screen-title { font-size:17px; }
     .form-grid { gap:12px; }
-    input, select, textarea { padding:10px 11px; font-size:13px; }
+    input, select, textarea { padding:10px 11px; font-size:16px; } /* 16px prevents iOS auto-zoom */
     label { font-size:10px; }
-    .checkbox-item { padding:10px 11px; }
+    .checkbox-item { padding:12px 11px; min-height:44px; } /* 44px min touch target */
     .checkbox-item span { font-size:12px; }
     .divider { margin:16px 0; }
 
@@ -317,7 +317,7 @@
   body.zh .onboard-heading { font-family:'Noto Sans SC',sans-serif; }
 
   /* ── HELP BUTTON ── */
-  .help-btn { width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg,var(--gold-light),var(--gold)); border:none; cursor:pointer; font-family:'Barlow Condensed',sans-serif; font-weight:800; font-size:17px; color:#fff; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(232,146,10,.35); transition:transform .2s,box-shadow .2s; flex-shrink:0; }
+  .help-btn { width:44px; height:44px; border-radius:50%; background:linear-gradient(135deg,var(--gold-light),var(--gold)); border:none; cursor:pointer; font-family:'Barlow Condensed',sans-serif; font-weight:800; font-size:17px; color:#fff; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(232,146,10,.35); transition:transform .2s,box-shadow .2s; flex-shrink:0; }
   .help-btn:hover { transform:scale(1.1); box-shadow:0 4px 14px rgba(232,146,10,.5); }
 
   /* ── HELP MODAL ── */
@@ -327,7 +327,8 @@
   .help-modal-head { background:linear-gradient(135deg,#B85A14,#E8920A); padding:20px 28px; border-radius:16px 16px 0 0; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:2; }
   .help-modal-head h2 { font-family:'Barlow Condensed',sans-serif; font-weight:800; font-size:22px; color:#fff; letter-spacing:2px; text-transform:uppercase; margin:0; }
   body.zh .help-modal-head h2 { font-family:'Noto Sans SC',sans-serif; font-size:18px; }
-  .help-close { background:rgba(255,255,255,.2); border:none; border-radius:50%; width:32px; height:32px; color:#fff; font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background .2s; flex-shrink:0; }
+  .help-version { font-family:'Barlow Condensed',sans-serif; font-size:11px; font-weight:600; letter-spacing:1.5px; color:rgba(255,255,255,.65); margin-top:3px; }
+  .help-close { background:rgba(255,255,255,.2); border:none; border-radius:50%; width:44px; height:44px; color:#fff; font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background .2s; flex-shrink:0; }
   .help-close:hover { background:rgba(255,255,255,.35); }
   .help-body { padding:24px 28px 28px; }
   .help-intro { font-size:13.5px; color:var(--text-dim); line-height:1.8; margin-bottom:22px; padding:14px 16px; background:var(--accent-bg); border-left:4px solid var(--gold); border-radius:0 8px 8px 0; }
@@ -412,7 +413,10 @@
 <div class='help-overlay' id='helpOverlay' onclick='closeHelpOutside(event)'>
   <div class='help-modal' id='helpModal'>
     <div class='help-modal-head'>
-      <h2 id='helpTitle'>User Guide</h2>
+      <div>
+        <h2 id='helpTitle'>User Guide</h2>
+        <div class='help-version'>DCL VMS · v1.2.0 · 2026-04-30</div>
+      </div>
       <button class='help-close' onclick='closeHelp()'>✕</button>
     </div>
     <div class='help-body'>
@@ -520,7 +524,8 @@
   <div class='training-panel active' id='panel-video'>
     <div class='video-player'>
       <div class='video-wrap'>
-      <video id='realVideo' class='real-video' onratechange='lockPlaybackRate()' onseeking='preventSeek()' onseeked='preventSeek()'
+      <video id='realVideo' class='real-video' playsinline webkit-playsinline
+        onratechange='lockPlaybackRate()' onseeking='preventSeek()' onseeked='preventSeek()'
         src='https://raw.githubusercontent.com/benbfm/DCL-HSE-Training/main/HSE.mp4'
         onloadedmetadata='onVideoLoaded()'
         ontimeupdate='onVideoProgress()'
@@ -706,7 +711,9 @@ en:{
   ack4:'I agree to comply with all <b>EHS policies and emergency procedures</b> and follow instructions from DCL safety personnel.',
   btn_back:'← Back', btn_save_continue:'Save & Continue →',
   err_name:'Visitor name is required',
+  err_name_num:'Visitor name must not contain numbers',
   err_id:'ID / Passport number is required', err_company:'Company is required',
+  err_company_num:'Company name cannot be numbers only',
   err_email:'Valid email is required', err_email_fmt:'Invalid email format',
   err_phone:'Phone number is required', err_date:'Visit date is required',
   err_purpose:'Purpose of visit is required', err_host:'A valid @duracell.com email is required',
@@ -874,7 +881,9 @@ zh:{
   ack4:'本人同意遵守所有<b>EHS 政策及应急程序</b>，并将服从 DCL 安全人员的指示。',
   btn_back:'← 返回', btn_save_continue:'保存并继续 →',
   err_name:'请填写访客姓名',
+  err_name_num:'访客姓名不能包含数字',
   err_id:'请填写身份证 / 护照号码', err_company:'请填写公司名称',
+  err_company_num:'公司名称不能为纯数字',
   err_email:'请填写有效的电子邮件', err_email_fmt:'电子邮件格式不正确',
   err_phone:'请填写联系电话', err_date:'请选择到访日期',
   err_purpose:'请选择到访目的', err_host:'请填写有效的 @duracell.com 邮箱地址',
@@ -921,7 +930,7 @@ zh:{
   pass_class_a_zh:'访客证 施工商', pass_class_a_en:'VISITOR PASS · CONTRACTOR',
   pass_class_b_zh:'访客证 允许进入车间', pass_class_b_en:'VISITOR PASS · PERMIT TO ENTER',
   next_steps:'<strong>后续步骤：</strong><br>1. 将此页面出示给保安<br>2. 领取纸质访客证及个人防护装备<br>3. 在接待区等候 DCL 接待人<br>4. 未有人陪同时严禁进入限制区域',
-  btn_print:'🖨 打印访客证', btn_new_visitor:'登记新访客 →', pass_uid:'访客编号',
+  btn_print:'🖨 打印访客证', btn_new_visitor:'登记新访客 →',
   email_title:'金霸王 DCL – 访客安全考试结果',
   email_divider:'===========================================',
   email_name:'访客姓名      :',
@@ -1146,6 +1155,20 @@ function submitForm() {
     validate('fHost','err-host','err_host'),
     validate('fEmergency','err-emergency','err_emergency'),
   ].filter(Boolean);
+  // Name must not contain any digit
+  const nameEl=$el('fFullName');
+  if(nameEl.value.trim() && /\d/.test(nameEl.value)){
+    nameEl.classList.add('error');
+    const errName=$el('err-fullName'); if(errName) errName.textContent=t('err_name_num');
+    errs.push(t('err_name_num'));
+  }
+  // Company cannot be numbers only
+  const companyEl=$el('fCompany');
+  if(companyEl.value.trim() && /^\d+$/.test(companyEl.value.trim())){
+    companyEl.classList.add('error');
+    const errCo=$el('err-company'); if(errCo) errCo.textContent=t('err_company_num');
+    errs.push(t('err_company_num'));
+  }
   const emailEl=$el('fEmail');
   if(emailEl.value && !/^\S+@\S+\.\S+$/.test(emailEl.value)){
     emailEl.classList.add('error');
