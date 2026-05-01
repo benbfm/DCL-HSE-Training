@@ -415,7 +415,7 @@
     <div class='help-modal-head'>
       <div>
         <h2 id='helpTitle'>User Guide</h2>
-        <div class='help-version'>DCL VMS · v1.2.0 · 2026-04-30</div>
+        <div class='help-version'>DCL VMS · v1.2.2 · 2026-05-01</div>
       </div>
       <button class='help-close' onclick='closeHelp()'>✕</button>
     </div>
@@ -1694,10 +1694,9 @@ function preventSeek() {
 // │ 4. Set BREVO_SENDER_EMAIL to any verified sender address                │
 // │    (verify it under  Senders & IP  →  Senders)                         │
 // └──────────────────────────────────────────────────────────────────────────┘
-const GITHUB_DISPATCH_URL = 'https://api.github.com/repos/benbfm/dcl-vms-mailer/dispatches';
-const GITHUB_PAT          = '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';
-const BREVO_SENDER_EMAIL  = 'benbfm@gmail.com';
-const BREVO_SENDER_NAME   = 'Duracell DCL VMS';
+const BREVO_API_KEY      = '__BREVO_KEY__';          // injected at deploy by GitHub Actions
+const BREVO_SENDER_EMAIL = 'benbfm@gmail.com';
+const BREVO_SENDER_NAME  = 'Duracell DCL VMS';
 
 function sendResultEmail(score, pass, correct) {
   // Guard: ensure toast always fires even if something goes wrong
@@ -1854,36 +1853,31 @@ function sendResultEmail(score, pass, correct) {
 
     + '</div></body></html>';
 
-  // ── Trigger GitHub Actions workflow → workflow calls Brevo server-side ───
-  fetch(GITHUB_DISPATCH_URL, {
+  // ── POST directly to Brevo API (key injected at deploy time, never in source) ──
+  var brevoPayload = {
+    sender:      { name: BREVO_SENDER_NAME, email: BREVO_SENDER_EMAIL },
+    to:          [{ email: 'dcl-sno-service@duracell.com' }],
+    subject:     subject,
+    htmlContent: htmlBody
+  };
+  if (v.host && v.host.indexOf('@') !== -1) {
+    brevoPayload.cc = [{ email: v.host }];
+  }
+  fetch('https://api.brevo.com/v3/smtp/email', {
     method:  'POST',
-    headers: {
-      'Authorization': 'Bearer ' + GITHUB_PAT,
-      'Accept':        'application/vnd.github.v3+json',
-      'Content-Type':  'application/json'
-    },
-    body: JSON.stringify({
-      event_type:     'send-visitor-email',
-      client_payload: {
-        to:           'dcl-sno-service@duracell.com',
-        cc:           (v.host && v.host.indexOf('@') !== -1) ? v.host : '',
-        subject:      subject,
-        html:         htmlBody,
-        sender_email: BREVO_SENDER_EMAIL,
-        sender_name:  BREVO_SENDER_NAME
-      }
-    })
+    headers: { 'Content-Type': 'application/json', 'api-key': BREVO_API_KEY },
+    body:    JSON.stringify(brevoPayload)
   }).then(function(res) {
     clearTimeout(_timeout);
-    if (res.status === 204) {   // GitHub returns 204 when job is queued
+    if (res.ok) {
       _toast(true);
     } else {
-      res.text().then(function(t){ console.warn('GitHub dispatch error:', res.status, t); });
+      res.text().then(function(t){ console.warn('Brevo error:', res.status, t); });
       _toast(false);
     }
   }).catch(function(err) {
     clearTimeout(_timeout);
-    console.warn('GitHub dispatch fetch error:', err);
+    console.warn('Brevo fetch error:', err);
     _toast(false);
   });
 
