@@ -416,7 +416,7 @@
     <div class='help-modal-head'>
       <div>
         <h2 id='helpTitle'>User Guide</h2>
-        <div class='help-version'>DCL VMS · v1.2.9 · 2026-05-06</div>
+        <div class='help-version'>DCL VMS · v1.2.9 · 2026-05-08</div>
       </div>
       <button class='help-close' onclick='closeHelp()'>✕</button>
     </div>
@@ -1831,7 +1831,7 @@ function sendResultEmail(score, pass, correct) {
     +   '<td style="padding:7px 12px 7px 0;color:#999;font-size:11px;text-transform:uppercase;">' + (isZH?'语言':'Language') + '</td>'
     +   '<td style="padding:7px 0;font-weight:600;">' + (isZH?'中文':'English') + '</td>'
     +   '<td style="padding:7px 12px 7px 0;color:#999;font-size:11px;text-transform:uppercase;">' + (isZH?'提交时间':'Submitted At') + '</td>'
-    +   '<td style="padding:7px 0;font-weight:600;">' + new Date().toLocaleString() + '</td>'
+    +   '<td style="padding:7px 0;font-weight:600;">' + (function(){var n=new Date();var d=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');var h=String(n.getHours()).padStart(2,'0');var m=String(n.getMinutes()).padStart(2,'0');var s=String(n.getSeconds()).padStart(2,'0');return d+' '+h+':'+m+':'+s;})() + '</td>'
     + '</tr>'
     + '</table></div>'
     + '<div style="padding:0 32px 28px;">'
