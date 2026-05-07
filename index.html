@@ -416,7 +416,7 @@
     <div class='help-modal-head'>
       <div>
         <h2 id='helpTitle'>User Guide</h2>
-        <div class='help-version'>DCL VMS · v1.2.9 · 2026-05-08</div>
+        <div class='help-version'>DCL VMS · v1.2.8 · 2026-05-08</div>
       </div>
       <button class='help-close' onclick='closeHelp()'>✕</button>
     </div>
@@ -1749,13 +1749,13 @@ function sendResultEmail(score, pass, correct) {
     const corrAns   = letters[q.ans] + '. ' + q.opts[q.ans];
     const rowBg     = isCorrect ? '#f1f8e9' : '#fff8f0';
     const mark      = isCorrect ? '✅' : '❌';
-    qaRows += '<tr style="background:' + rowBg + '">'
-      + '<td style="padding:8px 10px;border:1px solid #e0d0c0;text-align:center;font-weight:700;color:#555;">' + (i+1) + '</td>'
-      + '<td style="padding:8px 10px;border:1px solid #e0d0c0;color:#222;">' + q.q + '</td>'
-      + '<td style="padding:8px 10px;border:1px solid #e0d0c0;">' + yourAns + '</td>'
-      + '<td style="padding:8px 10px;border:1px solid #e0d0c0;color:#1E7E34;font-weight:600;">' + corrAns + '</td>'
-      + '<td style="padding:8px 10px;border:1px solid #e0d0c0;text-align:center;">' + mark + '</td>'
-      + '</tr>';
+    qaRows += "<tr style='background:" + rowBg + "'>"
+      + "<td style='padding:8px;border:1px solid #e0d0c0;text-align:center;font-weight:bold;color:#555;'>" + (i+1) + "</td>"
+      + "<td style='padding:8px;border:1px solid #e0d0c0;color:#222;'>" + q.q + "</td>"
+      + "<td style='padding:8px;border:1px solid #e0d0c0;'>" + yourAns + "</td>"
+      + "<td style='padding:8px;border:1px solid #e0d0c0;color:#1E7E34;font-weight:bold;'>" + corrAns + "</td>"
+      + "<td style='padding:8px;border:1px solid #e0d0c0;text-align:center;'>" + mark + "</td>"
+      + "</tr>";
   });
 
   const reviewLabel     = isZH ? '答题回顾'  : 'Question Review';
@@ -1764,94 +1764,88 @@ function sendResultEmail(score, pass, correct) {
   const correctAnsLabel = isZH ? '正确答案'   : 'Correct Answer';
   const resultLabel     = isZH ? '结果'       : 'Result';
 
-  const htmlBody = '<!DOCTYPE html>'
-    + '<html><head><meta charset="UTF-8"></head>'
-    + '<body style="font-family:Arial,sans-serif;background:#f5f0ea;margin:0;padding:20px;">'
-    + '<div style="max-width:700px;margin:0 auto;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.12);">'
-    + '<div style="background:linear-gradient(135deg,#B85A14,#E8920A);padding:28px 32px;text-align:center;">'
-    + '<h1 style="color:#fff;font-size:24px;margin:0;letter-spacing:2px;text-transform:uppercase;">Duracell DCL</h1>'
-    + '<p style="color:#ffe0b0;margin:6px 0 0;font-size:13px;letter-spacing:1px;">'
-    + (isZH ? '访客安全考试结果' : 'Visitor Safety Exam Result')
-    + '</p></div>'
-    + '<div style="text-align:center;padding:28px 32px 16px;">'
-    + '<div style="display:inline-block;width:96px;height:96px;line-height:96px;border-radius:50%;'
-    +   'background:' + resultBg + ';border:3px solid ' + resultColor + ';'
-    +   'font-size:28px;font-weight:800;color:' + resultColor + ';">' + score + '%</div>'
-    + '<p style="font-size:22px;font-weight:700;color:' + resultColor + ';margin:14px 0 4px;">'
-    + (pass ? (isZH ? '🎉 通过' : '🎉 PASSED') : (isZH ? '⚠️ 未通过' : '⚠️ FAILED')) + '</p>'
-    + '<p style="color:#888;font-size:13px;margin:0;">'
-    + (isZH ? ('答对 ' + correct + '/' + examQuestions.length + ' 题') : (correct + ' of ' + examQuestions.length + ' correct'))
-    + '</p></div>'
-    + '<div style="padding:8px 32px 20px;">'
-    + '<p style="font-size:11px;font-weight:700;color:#B85A14;text-transform:uppercase;letter-spacing:1px;'
-    +   'border-bottom:2px solid #f0d9c0;padding-bottom:8px;margin-bottom:12px;">'
-    + (isZH ? '访客信息' : 'Visitor Information') + '</p>'
-    + '<table style="width:100%;border-collapse:collapse;font-size:13px;">'
-    + '<tr>'
-    +   '<td style="padding:7px 12px 7px 0;color:#999;font-size:11px;text-transform:uppercase;width:22%">' + (isZH?'姓名':'Name') + '</td>'
-    +   '<td style="padding:7px 0;font-weight:600;width:28%">' + name + '</td>'
-    +   '<td style="padding:7px 12px 7px 0;color:#999;font-size:11px;text-transform:uppercase;width:22%">' + (isZH?'公司':'Company') + '</td>'
-    +   '<td style="padding:7px 0;font-weight:600;width:28%">' + company + '</td>'
-    + '</tr>'
-    + '<tr style="background:#faf7f3;">'
-    +   '<td style="padding:7px 12px 7px 0;color:#999;font-size:11px;text-transform:uppercase;">' + (isZH?'电子邮件':'Email') + '</td>'
-    +   '<td style="padding:7px 0;font-weight:600;">' + (v.email||'—') + '</td>'
-    +   '<td style="padding:7px 12px 7px 0;color:#999;font-size:11px;text-transform:uppercase;">' + (isZH?'联系电话':'Phone') + '</td>'
-    +   '<td style="padding:7px 0;font-weight:600;">' + (v.phone||'—') + '</td>'
-    + '</tr>'
-    + '<tr>'
-    +   '<td style="padding:7px 12px 7px 0;color:#999;font-size:11px;text-transform:uppercase;">' + (isZH?'到访日期':'Visit Date') + '</td>'
-    +   '<td style="padding:7px 0;font-weight:600;">' + date + '</td>'
-    +   '<td style="padding:7px 12px 7px 0;color:#999;font-size:11px;text-transform:uppercase;">' + (isZH?'到访目的':'Purpose') + '</td>'
-    +   '<td style="padding:7px 0;font-weight:600;">' + purpose + '</td>'
-    + '</tr>'
-    + '<tr style="background:#faf7f3;">'
-    +   '<td style="padding:7px 12px 7px 0;color:#999;font-size:11px;text-transform:uppercase;">' + (isZH?'接待人':'Host') + '</td>'
-    +   '<td style="padding:7px 0;font-weight:600;">' + host + '</td>'
-    +   '<td style="padding:7px 12px 7px 0;color:#999;font-size:11px;text-transform:uppercase;">' + (isZH?'到访部门':'Department') + '</td>'
-    +   '<td style="padding:7px 0;font-weight:600;">' + (v.dept||'—') + '</td>'
-    + '</tr>'
-    + '<tr>'
-    +   '<td style="padding:7px 12px 7px 0;color:#999;font-size:11px;text-transform:uppercase;">' + (isZH?'车牌号':'Vehicle') + '</td>'
-    +   '<td style="padding:7px 0;font-weight:600;">' + (v.vehicle||'—') + '</td>'
-    +   '<td style="padding:7px 12px 7px 0;color:#999;font-size:11px;text-transform:uppercase;">' + (isZH?'健康状况':'Health') + '</td>'
-    +   '<td style="padding:7px 0;font-weight:600;">' + (v.health||'—') + '</td>'
-    + '</tr>'
-    + '<tr style="background:#faf7f3;">'
-    +   '<td style="padding:7px 12px 7px 0;color:#999;font-size:11px;text-transform:uppercase;">' + (isZH?'紧急联系人':'Emergency') + '</td>'
-    +   '<td colspan="3" style="padding:7px 0;font-weight:600;">' + (v.emergency||'—') + '</td>'
-    + '</tr>'
-    + '<tr>'
-    +   '<td style="padding:7px 12px 7px 0;color:#999;font-size:11px;text-transform:uppercase;">' + (isZH?'访客编号':'Visitor ID') + '</td>'
-    +   '<td style="padding:7px 0;font-weight:600;color:#B85A14;font-family:monospace;">' + (v.uid || '—') + '</td>'
-    +   '<td style="padding:7px 12px 7px 0;color:#999;font-size:11px;text-transform:uppercase;">' + (isZH?'考试次数':'Attempt #') + '</td>'
-    +   '<td style="padding:7px 0;font-weight:600;">' + examAttempt + '</td>'
-    + '</tr>'
-    + '<tr style="background:#faf7f3;">'
-    +   '<td style="padding:7px 12px 7px 0;color:#999;font-size:11px;text-transform:uppercase;">' + (isZH?'语言':'Language') + '</td>'
-    +   '<td style="padding:7px 0;font-weight:600;">' + (isZH?'中文':'English') + '</td>'
-    +   '<td style="padding:7px 12px 7px 0;color:#999;font-size:11px;text-transform:uppercase;">' + (isZH?'提交时间':'Submitted At') + '</td>'
-    +   '<td style="padding:7px 0;font-weight:600;">' + (function(){var n=new Date();var d=n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');var h=String(n.getHours()).padStart(2,'0');var m=String(n.getMinutes()).padStart(2,'0');var s=String(n.getSeconds()).padStart(2,'0');return d+' '+h+':'+m+':'+s;})() + '</td>'
-    + '</tr>'
-    + '</table></div>'
-    + '<div style="padding:0 32px 28px;">'
-    + '<p style="font-size:11px;font-weight:700;color:#B85A14;text-transform:uppercase;letter-spacing:1px;'
-    +   'border-bottom:2px solid #f0d9c0;padding-bottom:8px;margin-bottom:12px;">' + reviewLabel + '</p>'
-    + '<table style="width:100%;border-collapse:collapse;font-size:12px;">'
-    + '<thead><tr style="background:#B85A14;color:#fff;">'
-    +   '<th style="padding:9px 10px;text-align:center;width:4%;">#</th>'
-    +   '<th style="padding:9px 10px;text-align:left;">' + qLabel + '</th>'
-    +   '<th style="padding:9px 10px;text-align:left;width:20%">' + yourAnsLabel + '</th>'
-    +   '<th style="padding:9px 10px;text-align:left;width:20%">' + correctAnsLabel + '</th>'
-    +   '<th style="padding:9px 10px;text-align:center;width:6%">' + resultLabel + '</th>'
-    + '</tr></thead>'
-    + '<tbody>' + qaRows + '</tbody>'
-    + '</table></div>'
-    + '<div style="background:#faf0e8;border-top:1px solid #f0d9c0;padding:14px 32px;text-align:center;">'
-    + '<p style="color:#bbb;font-size:11px;margin:0;">'
-    + (isZH ? '由金霸王 DCL 访客管理系统自动生成' : 'Auto-generated by Duracell DCL Visitor Management System')
-    + '</p></div>'
-    + '</div></body></html>';
+  // ── Power-Apps-safe HTML: single quotes only, inline styles, no doctype/head/body ──
+  const htmlBody = (function(){
+    var sq = "'";  // single-quote alias so template literals stay readable
+    var h = '';
+
+    // Header bar
+    h += '<div style=' + sq + 'font-family:Arial,sans-serif;background:#f5f0ea;padding:16px;' + sq + '>';
+    h += '<div style=' + sq + 'max-width:700px;margin:0 auto;background:#ffffff;border-radius:10px;overflow:hidden;' + sq + '>';
+
+    // Title strip
+    h += '<div style=' + sq + 'background:#B85A14;padding:20px 24px;text-align:center;' + sq + '>';
+    h += '<div style=' + sq + 'color:#ffffff;font-size:22px;font-weight:bold;letter-spacing:2px;' + sq + '>Duracell DCL</div>';
+    h += '<div style=' + sq + 'color:#ffe0b0;font-size:12px;margin-top:4px;' + sq + '>' + (isZH ? '访客安全考试结果' : 'Visitor Safety Exam Result') + '</div>';
+    h += '</div>';
+
+    // Score badge
+    h += '<div style=' + sq + 'text-align:center;padding:24px 24px 12px;' + sq + '>';
+    h += '<div style=' + sq + 'display:inline-block;width:88px;height:88px;line-height:88px;border-radius:50%;background:' + resultBg + ';border:3px solid ' + resultColor + ';font-size:26px;font-weight:bold;color:' + resultColor + ';' + sq + '>' + score + '%</div>';
+    h += '<div style=' + sq + 'font-size:20px;font-weight:bold;color:' + resultColor + ';margin:12px 0 2px;' + sq + '>' + (pass ? (isZH ? '🎉 通过' : '🎉 PASSED') : (isZH ? '⚠️ 未通过' : '⚠️ FAILED')) + '</div>';
+    h += '<div style=' + sq + 'color:#888;font-size:12px;' + sq + '>' + (isZH ? ('答对 ' + correct + '/' + examQuestions.length + ' 题') : (correct + ' of ' + examQuestions.length + ' correct')) + '</div>';
+    h += '</div>';
+
+    // Section: Visitor Info
+    h += '<div style=' + sq + 'padding:8px 24px 16px;' + sq + '>';
+    h += '<div style=' + sq + 'font-size:11px;font-weight:bold;color:#B85A14;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid #f0d9c0;padding-bottom:6px;margin-bottom:10px;' + sq + '>' + (isZH ? '访客信息' : 'Visitor Information') + '</div>';
+    h += '<table style=' + sq + 'width:100%;border-collapse:collapse;font-size:13px;' + sq + '>';
+
+    // Row helper
+    function row(bg, c1, v1, c2, v2) {
+      var s = bg ? ' style=' + sq + 'background:#faf7f3;' + sq : '';
+      return '<tr' + s + '>'
+        + '<td style=' + sq + 'padding:6px 10px 6px 0;color:#999;font-size:11px;text-transform:uppercase;width:22%;' + sq + '>' + c1 + '</td>'
+        + '<td style=' + sq + 'padding:6px 0;font-weight:bold;width:28%;' + sq + '>' + (v1||'\u2014') + '</td>'
+        + '<td style=' + sq + 'padding:6px 10px 6px 0;color:#999;font-size:11px;text-transform:uppercase;width:22%;' + sq + '>' + c2 + '</td>'
+        + '<td style=' + sq + 'padding:6px 0;font-weight:bold;width:28%;' + sq + '>' + (v2||'\u2014') + '</td>'
+        + '</tr>';
+    }
+    function rowFull(bg, c1, v1) {
+      var s = bg ? ' style=' + sq + 'background:#faf7f3;' + sq : '';
+      return '<tr' + s + '>'
+        + '<td style=' + sq + 'padding:6px 10px 6px 0;color:#999;font-size:11px;text-transform:uppercase;width:22%;' + sq + '>' + c1 + '</td>'
+        + '<td colspan=3 style=' + sq + 'padding:6px 0;font-weight:bold;' + sq + '>' + (v1||'\u2014') + '</td>'
+        + '</tr>';
+    }
+
+    var now = new Date();
+    var submittedAt = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0')
+      +' '+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0')+':'+String(now.getSeconds()).padStart(2,'0');
+
+    h += row(false, isZH?'姓名':'Name',           name,           isZH?'公司':'Company',       company);
+    h += row(true,  isZH?'电子邮件':'Email',       v.email,        isZH?'联系电话':'Phone',     v.phone);
+    h += row(false, isZH?'到访日期':'Visit Date',  date,           isZH?'到访目的':'Purpose',   purpose);
+    h += row(true,  isZH?'接待人':'Host',          host,           isZH?'到访部门':'Department',v.dept);
+    h += row(false, isZH?'车牌号':'Vehicle',       v.vehicle,      isZH?'健康状况':'Health',    v.health);
+    h += rowFull(true,  isZH?'紧急联系人':'Emergency', v.emergency);
+    h += row(false, isZH?'访客编号':'Visitor ID',  v.uid,          isZH?'考试次数':'Attempt #', String(examAttempt));
+    h += row(true,  isZH?'语言':'Language',        isZH?'中文':'English', isZH?'提交时间':'Submitted At', submittedAt);
+
+    h += '</table></div>';
+
+    // Section: Q&A Review
+    h += '<div style=' + sq + 'padding:0 24px 20px;' + sq + '>';
+    h += '<div style=' + sq + 'font-size:11px;font-weight:bold;color:#B85A14;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid #f0d9c0;padding-bottom:6px;margin-bottom:10px;' + sq + '>' + reviewLabel + '</div>';
+    h += '<table style=' + sq + 'width:100%;border-collapse:collapse;font-size:12px;' + sq + '>';
+    h += '<tr style=' + sq + 'background:#B85A14;color:#ffffff;' + sq + '>'
+       + '<th style=' + sq + 'padding:8px;text-align:center;width:4%;' + sq + '>#</th>'
+       + '<th style=' + sq + 'padding:8px;text-align:left;' + sq + '>' + qLabel + '</th>'
+       + '<th style=' + sq + 'padding:8px;text-align:left;width:20%;' + sq + '>' + yourAnsLabel + '</th>'
+       + '<th style=' + sq + 'padding:8px;text-align:left;width:20%;' + sq + '>' + correctAnsLabel + '</th>'
+       + '<th style=' + sq + 'padding:8px;text-align:center;width:6%;' + sq + '>' + resultLabel + '</th>'
+       + '</tr>';
+    h += qaRows;
+    h += '</table></div>';
+
+    // Footer
+    h += '<div style=' + sq + 'background:#faf0e8;border-top:1px solid #f0d9c0;padding:12px 24px;text-align:center;' + sq + '>';
+    h += '<div style=' + sq + 'color:#bbb;font-size:11px;' + sq + '>' + (isZH ? '由金霸王 DCL 访客管理系统自动生成' : 'Auto-generated by Duracell DCL Visitor Management System') + '</div>';
+    h += '</div>';
+
+    h += '</div></div>';
+    return h;
+  })();
 
   var brevoPayload = {
     sender:      { name: BREVO_SENDER_NAME, email: BREVO_SENDER_EMAIL },
