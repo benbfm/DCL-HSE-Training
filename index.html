@@ -416,7 +416,7 @@
     <div class='help-modal-head'>
       <div>
         <h2 id='helpTitle'>User Guide</h2>
-        <div class='help-version'>DCL VMS · v1.2.9 · 2026-05-08</div>
+        <div class='help-version'>DCL VMS · v1.2.9 · 2026-05-06</div>
       </div>
       <button class='help-close' onclick='closeHelp()'>✕</button>
     </div>
@@ -738,6 +738,7 @@ en:{
   exam_attempt_label:'Attempt #{n} — Questions selected randomly. Score ≥ 80% to pass.',
   exam_progress_label:'Progress:',
   btn_prev_q:'← Previous', btn_next_q:'Next →', btn_submit_exam:'Submit Exam ✓',
+  mail_sending:'Please wait while we send your result to Duracell. Thanks for your patience 🙏',
   question_of:'Question {a} of {b}',
   unanswered_confirm:'{n} unanswered question(s). Submit anyway?',
   no_answer:'(no answer)', your_answer:'Your answer:', correct_answer:'Correct:',
@@ -909,6 +910,7 @@ zh:{
   exam_attempt_label:'第 {n} 次考试 — 题目随机抽取。成绩 ≥ 80% 视为通过。',
   exam_progress_label:'进度：',
   btn_prev_q:'← 上一题', btn_next_q:'下一题 →', btn_submit_exam:'提交试卷 ✓',
+  mail_sending:'正在发送考试结果至金霸王，请稍候 🙏',
   question_of:'第 {a} 题 / 共 {b} 题',
   unanswered_confirm:'您有 {n} 道题目未作答，是否仍然提交？',
   no_answer:'（未作答）', your_answer:'您的答案：', correct_answer:'正确答案：',
@@ -1484,6 +1486,7 @@ function submitExam() {
 
   if (pass) {
     if(!visitorData.uid) visitorData.uid = generateUID();
+    showSendingToast();
     goTo(4);
     setTimeout(function(){
       sendResultEmail(score, pass, correct);
@@ -1684,6 +1687,34 @@ const BREVO_API_KEY      = '__BREVO_KEY__';
 const BREVO_SENDER_EMAIL = 'benbfm@gmail.com';
 const BREVO_SENDER_NAME  = 'DIGI-VSM-Service';
 
+// ── Sending toast (persistent until mail resolves) ──
+function showSendingToast() {
+  var existing = document.getElementById('sendingToast');
+  if (existing) existing.remove();
+  var toast = document.createElement('div');
+  toast.id = 'sendingToast';
+  toast.style.cssText = [
+    'position:fixed','bottom:28px','left:50%','transform:translateX(-50%)',
+    'background:#1C4A8C','color:#fff',
+    'padding:14px 24px','border-radius:10px',
+    'font-family:"Barlow Condensed","Noto Sans SC",sans-serif',
+    'font-size:15px','letter-spacing:.5px',
+    'box-shadow:0 4px 20px rgba(0,0,0,.25)',
+    'z-index:9999','display:flex','align-items:center','gap:10px',
+    'max-width:90vw','text-align:center',
+    'opacity:0','transition:opacity .3s ease'
+  ].join(';');
+  toast.innerHTML = '<span style="font-size:18px">⏳</span><span>' + t('mail_sending') + '</span>';
+  document.body.appendChild(toast);
+  requestAnimationFrame(function(){ toast.style.opacity = '1'; });
+}
+function dismissSendingToast() {
+  var toast = document.getElementById('sendingToast');
+  if (!toast) return;
+  toast.style.opacity = '0';
+  setTimeout(function(){ if (toast.parentNode) toast.parentNode.removeChild(toast); }, 400);
+}
+
 function sendResultEmail(score, pass, correct) {
   var TO_ADDR_SAFE = 'dcl-sno-service@duracell.com';
   var _toastFired = false;
@@ -1857,6 +1888,7 @@ function sendResultEmail(score, pass, correct) {
 }
 
 function showMailToast(toAddr, success) {
+  dismissSendingToast();
   var existing = document.getElementById('mailToast');
   if (existing) existing.remove();
 
