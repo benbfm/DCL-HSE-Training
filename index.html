@@ -42,16 +42,17 @@
   .container { max-width:860px; margin:0 auto; padding:32px 24px; }
 
   /* WELCOME */
-  .welcome-hero { text-align:center; padding:44px 0 28px; }
+  .welcome-hero { text-align:center; padding:28px 0 18px; }
   .welcome-hero .big-icon { font-size:60px; margin-bottom:14px; display:block; }
   .welcome-hero h2 { font-family:'Barlow Condensed',sans-serif; font-weight:800; font-size:40px; color:var(--copper); letter-spacing:2px; line-height:1; text-transform:uppercase; }
   body.zh .welcome-hero h2 { font-family:'Noto Sans SC',sans-serif; font-size:32px; letter-spacing:4px; }
   .welcome-hero p { margin-top:12px; font-size:15px; color:var(--text-dim); max-width:520px; margin-left:auto; margin-right:auto; font-weight:500; }
-  .safety-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; margin:24px 0; }
+  .safety-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; margin:15px 0; }
   .safety-card { background:var(--white); border:1px solid var(--card-border); border-top:3px solid var(--gold); border-radius:12px; padding:18px; transition:transform .2s,box-shadow .2s; box-shadow:0 1px 4px rgba(200,101,26,.06); }
   .safety-card:hover { transform:translateY(-3px); box-shadow:0 6px 18px rgba(200,101,26,.13); border-top-color:var(--copper); }
-  .safety-card .icon { font-size:26px; margin-bottom:8px; display:block; }
-  .safety-card h4 { font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:14px; color:var(--copper); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; }
+  .safety-card-header { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+  .safety-card .icon { font-size:26px; flex-shrink:0; line-height:1; }
+  .safety-card h4 { font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:14px; color:var(--copper); text-transform:uppercase; letter-spacing:1px; margin:0; line-height:1.2; }
   body.zh .safety-card h4 { font-family:'Noto Sans SC',sans-serif; font-size:13px; letter-spacing:2px; }
   .safety-card ul { list-style:none; }
   .safety-card ul li { font-size:12.5px; color:var(--text-dim); padding:3px 0 3px 14px; border-bottom:1px solid rgba(200,101,26,.08); position:relative; }
@@ -149,7 +150,8 @@
   /* ONBOARD */
   .onboard-card { background:var(--white); border:2px solid var(--green); border-radius:16px; padding:30px; text-align:center; position:relative; overflow:hidden; box-shadow:0 4px 20px rgba(42,122,59,.08); }
   .onboard-card::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse at top,rgba(42,122,59,.05),transparent 60%); pointer-events:none; }
-  .onboard-badge { width:76px; height:76px; background:linear-gradient(135deg,var(--green),#4ABA6A); border-radius:50%; margin:0 auto 18px; display:flex; align-items:center; justify-content:center; font-size:34px; box-shadow:0 4px 20px rgba(42,122,59,.25); }
+  .onboard-title-row { display:flex; align-items:center; justify-content:center; gap:16px; margin-bottom:10px; }
+  .onboard-badge { width:76px; height:76px; background:linear-gradient(135deg,var(--green),#4ABA6A); border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:34px; box-shadow:0 4px 20px rgba(42,122,59,.25); }
   /* VISITOR PASS CARD — Physical badge style */
   .visitor-pass { background:#fff; border-radius:16px; margin:20px auto; max-width:360px; position:relative; box-shadow:0 6px 32px rgba(0,0,0,.18); overflow:hidden; border:1px solid rgba(0,0,0,.10); }
   /* Class-specific colours applied via JS */
@@ -171,10 +173,11 @@
   .pass-company-text { font-size:11px; color:#666; margin-top:2px; }
   .pass-serial { font-family:'Barlow Condensed',sans-serif; font-size:13px; font-weight:700; color:var(--pass-color,#D4580A); letter-spacing:2px; margin-top:3px; }
   .pass-info-qr { display:flex; flex-direction:column; gap:12px; align-items:stretch; margin-bottom:0; }
-  .pass-info-grid { flex:1; display:flex; flex-direction:column; gap:6px; }
-  .pass-field { display:flex; flex-direction:column; gap:1px; }
-  .pass-field label, .pass-label { font-size:9px; color:#999; text-transform:uppercase; letter-spacing:1px; display:block; }
-  .pass-field span { font-size:12px; color:#222; font-weight:600; }
+  .pass-info-grid { flex:1; display:flex; flex-direction:column; gap:5px; }
+  .pass-field { display:flex; flex-direction:row; align-items:baseline; gap:4px; }
+  .pass-colon { font-size:10px; color:#999; flex-shrink:0; }
+  .pass-field label, .pass-label { font-size:10px; color:#999; text-transform:uppercase; letter-spacing:1px; display:inline; white-space:nowrap; }
+  .pass-field span { font-size:11px; color:#222; font-weight:600; }
   .pass-qr-box { width:100%; height:auto; min-height:200px; flex-shrink:0; background:#fff; padding:6px; border-radius:6px; border:1px solid rgba(0,0,0,.12); display:flex; align-items:center; justify-content:center; overflow:hidden; }
   .pass-uid-strip { text-align:center; padding:6px 18px; font-size:10px; color:#888; letter-spacing:1px; border-top:1px solid rgba(0,0,0,.07); margin-top:12px; }
   .pass-uid-strip strong { color:var(--pass-color,#D4580A); font-family:'Barlow Condensed',sans-serif; font-size:12px; letter-spacing:2.5px; }
@@ -244,7 +247,7 @@
     .container { padding:16px 12px; }
 
     /* Welcome */
-    .welcome-hero { padding:24px 0 16px; }
+    .welcome-hero { padding:15px 0 10px; }
     .welcome-hero .big-icon { font-size:44px; margin-bottom:10px; }
     .welcome-hero h2 { font-size:22px; letter-spacing:1px; }
     body.zh .welcome-hero h2 { font-size:18px; }
@@ -297,7 +300,7 @@
 
     /* Onboard / Pass */
     .onboard-card { padding:16px 12px; }
-    .onboard-badge { width:60px; height:60px; font-size:26px; }
+    .onboard-badge { width:56px; height:56px; font-size:24px; }
     .visitor-pass { margin:14px auto; }
     .pass-name { font-size:19px; }
     .pass-info-qr { flex-direction:row; }
@@ -314,7 +317,7 @@
     .training-tabs { flex-direction:column; }
   }
 
-  .onboard-heading { font-family:'Barlow Condensed',sans-serif; font-size:26px; color:var(--gold); letter-spacing:2px; text-transform:uppercase; margin-bottom:6px; }
+  .onboard-heading { font-family:'Barlow Condensed',sans-serif; font-size:26px; color:var(--gold); letter-spacing:2px; text-transform:uppercase; margin:0; }
   body.zh .onboard-heading { font-family:'Noto Sans SC',sans-serif; }
 
   /* ── HELP BUTTON ── */
@@ -416,7 +419,7 @@
     <div class='help-modal-head'>
       <div>
         <h2 id='helpTitle'>User Guide</h2>
-        <div class='help-version'>DCL VMS · v1.2.8 · 2026-05-08</div>
+        <div class='help-version'>DCL VMS · v1.2.9 · 2026-05-08</div>
       </div>
       <button class='help-close' onclick='closeHelp()'>✕</button>
     </div>
@@ -436,12 +439,12 @@
     <p data-i18n='welcome_sub'>Before entering our facility, please complete this visitor registration and safety induction process.</p>
   </div>
   <div class='safety-grid'>
-    <div class='safety-card'><span class='icon'>🦺</span><h4 data-i18n='sc1_title'>PPE Requirements</h4><ul id='sc1_list'></ul></div>
-    <div class='safety-card'><span class='icon'>🚨</span><h4 data-i18n='sc2_title'>Emergency Procedures</h4><ul id='sc2_list'></ul></div>
-    <div class='safety-card'><span class='icon'>⚗️</span><h4 data-i18n='sc3_title'>Chemical & Battery Hazards</h4><ul id='sc3_list'></ul></div>
-    <div class='safety-card'><span class='icon'>📋</span><h4 data-i18n='sc4_title'>Site Rules</h4><ul id='sc4_list'></ul></div>
-    <div class='safety-card'><span class='icon'>⚡</span><h4 data-i18n='sc5_title'>Electrical Safety</h4><ul id='sc5_list'></ul></div>
-    <div class='safety-card'><span class='icon'>🏥</span><h4 data-i18n='sc6_title'>First Aid & Medical</h4><ul id='sc6_list'></ul></div>
+    <div class='safety-card'><div class='safety-card-header'><span class='icon'>🦺</span><h4 data-i18n='sc1_title'>PPE Requirements</h4></div><ul id='sc1_list'></ul></div>
+    <div class='safety-card'><div class='safety-card-header'><span class='icon'>🚨</span><h4 data-i18n='sc2_title'>Emergency Procedures</h4></div><ul id='sc2_list'></ul></div>
+    <div class='safety-card'><div class='safety-card-header'><span class='icon'>⚗️</span><h4 data-i18n='sc3_title'>Chemical & Battery Hazards</h4></div><ul id='sc3_list'></ul></div>
+    <div class='safety-card'><div class='safety-card-header'><span class='icon'>📋</span><h4 data-i18n='sc4_title'>Site Rules</h4></div><ul id='sc4_list'></ul></div>
+    <div class='safety-card'><div class='safety-card-header'><span class='icon'>⚡</span><h4 data-i18n='sc5_title'>Electrical Safety</h4></div><ul id='sc5_list'></ul></div>
+    <div class='safety-card'><div class='safety-card-header'><span class='icon'>🏥</span><h4 data-i18n='sc6_title'>First Aid & Medical</h4></div><ul id='sc6_list'></ul></div>
   </div>
   <div class='disclaimer-box'>
     <span class='warn-icon'>⚠️</span>
@@ -606,8 +609,10 @@
   <div class='screen-title'>✅ <span data-i18n='onboard_title'>Visitor Onboarding</span></div>
   <div class='screen-sub' data-i18n='onboard_sub'>Welcome aboard! Your registration is complete.</div>
   <div class='onboard-card'>
-    <div class='onboard-badge'>✓</div>
-    <h3 class='onboard-heading' data-i18n='induction_complete'>Induction Complete!</h3>
+    <div class='onboard-title-row'>
+      <div class='onboard-badge'>✓</div>
+      <h3 class='onboard-heading' data-i18n='induction_complete'>Induction Complete!</h3>
+    </div>
     <p style='color:var(--text-dim);margin:8px 0 18px;font-size:14px' data-i18n='induction_desc'>You have successfully completed the Duracell DCL visitor safety induction.</p>
     <div class='visitor-pass' id='visitorPassCard'>
       <!-- Header: Corp name + class designation -->
@@ -634,10 +639,10 @@
         </div>
         <div class='pass-info-qr'>
           <div class='pass-info-grid'>
-            <div class='pass-field'><span class='pass-label' data-i18n='pass_date'>Visit Date</span><span id='passDate'>—</span></div>
-            <div class='pass-field'><span class='pass-label' data-i18n='pass_valid'>Valid Until</span><span id='passValidUntil'>—</span></div>
-            <div class='pass-field'><span class='pass-label' data-i18n='pass_host'>Host</span><span id='passHost'>—</span></div>
-            <div class='pass-field'><span class='pass-label' data-i18n='pass_score'>Exam Score</span><span id='passScore' style='color:var(--green);font-weight:700'>—</span></div>
+            <div class='pass-field'><span class='pass-label' data-i18n='pass_date'>Visit Date</span><span class='pass-colon'>:</span><span id='passDate'>—</span></div>
+            <div class='pass-field'><span class='pass-label' data-i18n='pass_valid'>Valid Until</span><span class='pass-colon'>:</span><span id='passValidUntil'>—</span></div>
+            <div class='pass-field'><span class='pass-label' data-i18n='pass_host'>Host</span><span class='pass-colon'>:</span><span id='passHost'>—</span></div>
+            <div class='pass-field'><span class='pass-label' data-i18n='pass_score'>Exam Score</span><span class='pass-colon'>:</span><span id='passScore' style='color:var(--green);font-weight:700'>—</span></div>
           </div>
           <div class='pass-qr-box' id='passQR'></div>
         </div>
