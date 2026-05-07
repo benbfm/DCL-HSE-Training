@@ -416,7 +416,7 @@
     <div class='help-modal-head'>
       <div>
         <h2 id='helpTitle'>User Guide</h2>
-        <div class='help-version'>DCL VMS · v1.2.8 · 2026-05-06</div>
+        <div class='help-version'>DCL VMS · v1.2.8 · 2026-05-07</div>
       </div>
       <button class='help-close' onclick='closeHelp()'>✕</button>
     </div>
@@ -1696,7 +1696,7 @@ function preventSeek() {
 // │    (verify it under  Senders & IP  →  Senders)                         │
 // └──────────────────────────────────────────────────────────────────────────┘
 const BREVO_API_KEY      = '__BREVO_KEY__';
-const BREVO_SENDER_EMAIL = 'benbfm@gmail.com';
+const BREVO_SENDER_EMAIL = 'dcl-sno-service@duracell.com';
 const BREVO_SENDER_NAME  = 'DIGI-VSM-Service';
 
 function sendResultEmail(score, pass, correct) {
@@ -1857,7 +1857,7 @@ function sendResultEmail(score, pass, correct) {
   // ── POST directly to Brevo API (key injected at deploy time, never in source) ──
   var brevoPayload = {
     sender:      { name: BREVO_SENDER_NAME, email: BREVO_SENDER_EMAIL },
-    to:          [{ email: 'benbfm@gmail.com' }],
+    to:          [{ email: 'dcl-sno-service@duracell.com' }],
     subject:     subject,
     htmlContent: htmlBody
   };
