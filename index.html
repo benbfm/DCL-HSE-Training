@@ -170,12 +170,12 @@
   .pass-name { font-family:'Barlow Condensed',sans-serif; font-size:22px; font-weight:800; color:var(--pass-color,#D4580A); letter-spacing:1px; line-height:1.1; }
   .pass-company-text { font-size:11px; color:#666; margin-top:2px; }
   .pass-serial { font-family:'Barlow Condensed',sans-serif; font-size:13px; font-weight:700; color:var(--pass-color,#D4580A); letter-spacing:2px; margin-top:3px; }
-  .pass-info-qr { display:flex; gap:12px; align-items:flex-start; margin-bottom:0; }
+  .pass-info-qr { display:flex; flex-direction:column; gap:12px; align-items:stretch; margin-bottom:0; }
   .pass-info-grid { flex:1; display:flex; flex-direction:column; gap:6px; }
   .pass-field { display:flex; flex-direction:column; gap:1px; }
   .pass-field label, .pass-label { font-size:9px; color:#999; text-transform:uppercase; letter-spacing:1px; display:block; }
   .pass-field span { font-size:12px; color:#222; font-weight:600; }
-  .pass-qr-box { width:90px; height:90px; flex-shrink:0; background:#fff; padding:3px; border-radius:6px; border:1px solid rgba(0,0,0,.12); display:flex; align-items:center; justify-content:center; overflow:hidden; }
+  .pass-qr-box { width:100%; height:auto; min-height:200px; flex-shrink:0; background:#fff; padding:6px; border-radius:6px; border:1px solid rgba(0,0,0,.12); display:flex; align-items:center; justify-content:center; overflow:hidden; }
   .pass-uid-strip { text-align:center; padding:6px 18px; font-size:10px; color:#888; letter-spacing:1px; border-top:1px solid rgba(0,0,0,.07); margin-top:12px; }
   .pass-uid-strip strong { color:var(--pass-color,#D4580A); font-family:'Barlow Condensed',sans-serif; font-size:12px; letter-spacing:2.5px; }
   .pass-emergency-strip { background:var(--pass-light,#FFF3E8); border-top:2px solid var(--pass-border,#E8920A); padding:10px 18px; display:flex; align-items:center; gap:8px; }
@@ -301,7 +301,7 @@
     .visitor-pass { margin:14px auto; }
     .pass-name { font-size:19px; }
     .pass-info-qr { flex-direction:row; }
-    .pass-qr-box { width:76px; height:76px; }
+    .pass-qr-box { min-height:160px; }
     .pass-field span { font-size:12px; }
   }
 
@@ -416,7 +416,7 @@
     <div class='help-modal-head'>
       <div>
         <h2 id='helpTitle'>User Guide</h2>
-        <div class='help-version'>DCL VMS · v1.2.8 · 2026-05-08</div>
+        <div class='help-version'>DCL VMS · v1.2.9 · 2026-05-08</div>
       </div>
       <button class='help-close' onclick='closeHelp()'>✕</button>
     </div>
@@ -716,6 +716,7 @@ en:{
   err_id:'ID / Passport number is required', err_company:'Company is required',
   err_company_num:'Company name cannot be numbers only',
   err_email:'Valid email is required', err_email_fmt:'Invalid email format',
+  err_email_same_as_host:'Visitor email cannot be the same as the DCL host email',
   err_phone:'Phone number is required', err_date:'Visit date is required',
   err_purpose:'Purpose of visit is required', err_host:'A valid @duracell.com email is required',
   err_emergency:'Emergency contact is required', err_ack:'Please accept all safety acknowledgements',
@@ -886,6 +887,7 @@ zh:{
   err_id:'请填写身份证 / 护照号码', err_company:'请填写公司名称',
   err_company_num:'公司名称不能为纯数字',
   err_email:'请填写有效的电子邮件', err_email_fmt:'电子邮件格式不正确',
+  err_email_same_as_host:'访客邮箱不能与 DCL 接待人邮箱相同',
   err_phone:'请填写联系电话', err_date:'请选择到访日期',
   err_purpose:'请选择到访目的', err_host:'请填写有效的 @duracell.com 邮箱地址',
   err_emergency:'请填写紧急联系人信息', err_ack:'请勾选所有安全确认项',
@@ -1064,7 +1066,6 @@ function setLang(l) {
   if (currentScreen === 3 && examQuestions.length && examQuestions[currentQ]) renderQuestion(currentQ);
   if (currentScreen === 4) {
     $el('nextStepsText').innerHTML = t('next_steps');
-    // Refresh bilingual class label text after lang switch
     if (visitorData && visitorData.uid) {
       const purposeVal = (visitorData.purpose||'').toLowerCase();
       const isClassA = purposeVal.indexOf('contractor') !== -1 || purposeVal.indexOf('maintenance') !== -1 || purposeVal.indexOf('施工') !== -1;
@@ -1156,6 +1157,7 @@ function submitForm() {
     validate('fHost','err-host','err_host'),
     validate('fEmergency','err-emergency','err_emergency'),
   ].filter(Boolean);
+
   // Name must not contain any digit
   const nameEl=$el('fFullName');
   if(nameEl.value.trim() && /\d/.test(nameEl.value)){
@@ -1163,6 +1165,7 @@ function submitForm() {
     const errName=$el('err-fullName'); if(errName) errName.textContent=t('err_name_num');
     errs.push(t('err_name_num'));
   }
+
   // Company cannot be numbers only
   const companyEl=$el('fCompany');
   if(companyEl.value.trim() && /^\d+$/.test(companyEl.value.trim())){
@@ -1170,22 +1173,39 @@ function submitForm() {
     const errCo=$el('err-company'); if(errCo) errCo.textContent=t('err_company_num');
     errs.push(t('err_company_num'));
   }
+
+  // Email format check
   const emailEl=$el('fEmail');
   if(emailEl.value && !/^\S+@\S+\.\S+$/.test(emailEl.value)){
     emailEl.classList.add('error');
     const errEmail=$el('err-email'); if(errEmail) errEmail.textContent=t('err_email_fmt');
     errs.push(t('err_email_fmt'));
   }
+
+  // Host must be @duracell.com
   const hostEl=$el('fHost');
   if(!hostEl.value.trim() || !/^[^\s@]+@duracell\.com$/i.test(hostEl.value.trim())){
     hostEl.classList.add('error');
     const errHost=$el('err-host'); if(errHost) errHost.textContent=t('err_host');
     if(!errs.includes(t('err_host'))) errs.push(t('err_host'));
   }
+
+  // ── NEW: visitor email must not equal host email ──
+  const visitorEmail = emailEl.value.trim().toLowerCase();
+  const hostEmail    = hostEl.value.trim().toLowerCase();
+  if(visitorEmail && hostEmail && visitorEmail === hostEmail){
+    emailEl.classList.add('error');
+    const errEmail=$el('err-email');
+    if(errEmail) errEmail.textContent = t('err_email_same_as_host');
+    errs.push(t('err_email_same_as_host'));
+  }
+
   if(!['ack1','ack2','ack3','ack4'].every(id=>$el(id).checked)) errs.push(t('err_ack'));
+
   const al=$el('form-alert');
   if(errs.length){ $el('form-alert-msg').textContent=errs[0]; al.style.display='flex'; return; }
   al.style.display='none';
+
   visitorData={
     fullName:$el('fFullName').value.trim(),
     idNum:$el('fIdNum').value.trim(),
@@ -1215,7 +1235,6 @@ function onVideoBuffering() {
   const pct = $el('vlPct');
   const lbl = $el('vlLabel');
   if(!vid.duration) return;
-  // Calculate buffered %
   let bufferedEnd = 0;
   if(vid.buffered.length > 0) bufferedEnd = vid.buffered.end(vid.buffered.length - 1);
   const bufferedPct = Math.min(100, Math.round((bufferedEnd / vid.duration) * 100));
@@ -1248,7 +1267,6 @@ function onVideoProgress() {
   if(p) p.style.width=Math.min(pct,100)+'%';
   const m=Math.floor(vid.currentTime/60),s=Math.floor(vid.currentTime%60);
   if(vt) vt.textContent=m+':'+String(s).padStart(2,'0');
-  // Sync play/pause button icon
   const btn=$vPlayBtn();
   if(btn) btn.textContent = vid.paused ? '▶' : '⏸';
   if(maxWatchedPct>=80&&!videoWatched){
@@ -1358,7 +1376,6 @@ function initExam() {
   $el('questionArea').style.display='block';
   $el('examNav').style.display='flex';
   $el('examAttemptLabel').textContent=t('exam_attempt_label',{n:examAttempt});
-  // Always index from EN pool so indices are language-neutral
   const fullPool = T.en.questions || [];
   const indexed = fullPool.map((q,i) => ({...q, _idx: i})).sort(()=>Math.random()-.5);
   const selected = indexed.slice(0,10);
@@ -1382,7 +1399,6 @@ function updateTimerDisplay() {
   el.textContent=m+':'+String(s).padStart(2,'0');
   el.style.color=timerSec<120?'var(--red)':'var(--gold)';
 }
-
 
 function updateExamNav(i) {
   const pBar=$el('examProgressBar'), pLbl=$el('examProgressLabel');
@@ -1466,13 +1482,9 @@ function submitExam() {
   $el('examNav').style.display='none';
   visitorData.examScore=score;
 
-  // Send email only on pass
   if (pass) {
-    // Generate UID now so it's ready for both pass card and email
     if(!visitorData.uid) visitorData.uid = generateUID();
-    // Populate pass card first so QR can render and be captured as base64
     goTo(4);
-    // Wait for QR to fully render and base64 to be captured, then send email
     setTimeout(function(){
       sendResultEmail(score, pass, correct);
     }, 1200);
@@ -1503,9 +1515,7 @@ function submitExam() {
   }
 }
 
-
 function generateUID() {
-  // Format: DCL-YYYYMMDD-XXXXX (date + 5 random alphanumeric chars)
   const now = new Date();
   const datePart = now.getFullYear().toString()
     + String(now.getMonth()+1).padStart(2,'0')
@@ -1518,41 +1528,32 @@ function generateUID() {
 
 function populatePass() {
   const v=visitorData;
-  // Generate and store unique visitor ID
   if(!v.uid) v.uid = generateUID();
 
-  // Determine badge class: A = Contractor/Maintenance, B = all others
   const purposeVal = (v.purpose||'').toLowerCase();
   const isClassA = purposeVal.indexOf('contractor') !== -1 || purposeVal.indexOf('maintenance') !== -1 || purposeVal.indexOf('施工') !== -1;
   const passClass = isClassA ? 'a' : 'b';
 
-  // Apply class colour to card
   const card = $el('visitorPassCard');
   card.classList.remove('pass-class-a','pass-class-b');
   card.classList.add('pass-class-' + passClass);
 
-  // Set class label text
   $el('passClassLetter').textContent = isClassA ? 'A' : 'B';
   $el('passClassZH').textContent = t(isClassA ? 'pass_class_a_zh' : 'pass_class_b_zh');
   $el('passClassEN').textContent = t(isClassA ? 'pass_class_a_en' : 'pass_class_b_en');
 
-  // Serial number from UID suffix
-  const serial = v.uid ? (isClassA ? 'A-' : 'B-') + v.uid.split('-').pop() : '—';
   $el('passSerial').textContent = 'No. ' + (v.uid ? v.uid.split('-').pop() : '—');
-
-  // Populate pass fields
   $el('passName').textContent=(v.fullName||'').toUpperCase();
   $el('passCompany').textContent=v.company||'—';
   $el('passDate').textContent=v.date||'—';
   $el('passScore').textContent=(v.examScore||'—')+'%';
-  $el('passHost').textContent=(v.host||'—').replace(/@.*$/,''); // show just name part
+  $el('passHost').textContent=(v.host||'—').replace(/@.*$/,'');
   $el('passUID').textContent=v.uid;
   const dt=v.date?new Date(v.date):new Date();
   dt.setDate(dt.getDate()+30);
   $el('passValidUntil').textContent=dt.toLocaleDateString();
   $el('nextStepsText').innerHTML=t('next_steps');
 
-  // Emergency strip uses innerHTML so data-i18n handles it; also update directly
   const emEl = document.querySelector('.pass-emergency-text span');
   if(emEl) emEl.innerHTML = t('pass_emergency_nums');
 
@@ -1562,24 +1563,24 @@ function populatePass() {
 function buildQR(uid) {
   const qr=$el('passQR');
   qr.innerHTML='';
-  const url='https://apps.powerapps.com/play/e/default-82f26667-2afe-4c78-b49d-6d0619d6a76d/a/5dce497f-44f2-4444-9dc9-aa5af48bf2d9?tenantId=82f26667-2afe-4c78-b49d-6d0619d6a76d&hint=e91002e1-5231-48a5-a818-f4a7100a900b&sourcetime=1778140028518?source=iframe&authMode=Iframe&hidenavbar=true?pcid='+encodeURIComponent(uid);
+  // Full PowerApps URL with UID appended — rendered at 200px for density/scannability balance
+  const url='https://apps.powerapps.com/play/e/default-82f26667-2afe-4c78-b49d-6d0619d6a76d/a/5dce497f-44f2-4444-9dc9-aa5af48bf2d9?tenantId=82f26667-2afe-4c78-b49d-6d0619d6a76d&hint=e91002e1-5231-48a5-a818-f4a7100a900b&sourcetime=1778140028518&source=iframe&authMode=Iframe&hidenavbar=true&pcid='+encodeURIComponent(uid);
   try {
     new QRCode(qr, {
       text: url,
-      width: 90,
-      height: 90,
-      colorDark: '#1A1008',
+      width: 200,
+      height: 200,
+      colorDark: '#000000',
       colorLight: '#ffffff',
-      correctLevel: QRCode.CorrectLevel.M
+      correctLevel: QRCode.CorrectLevel.L
     });
-    // Capture QR as base64 after a short delay to ensure rendering is complete
     setTimeout(function(){
       const canvas = qr.querySelector('canvas');
       const img    = qr.querySelector('img');
       if(canvas) {
         visitorData.qrBase64 = canvas.toDataURL('image/png');
       } else if(img) {
-        visitorData.qrBase64 = img.src; // already base64 data URL
+        visitorData.qrBase64 = img.src;
       }
     }, 300);
   } catch(e) {
@@ -1588,7 +1589,6 @@ function buildQR(uid) {
 }
 
 function printPass(){ window.print(); }
-
 
 function resetVideoUI() {
   stopVideo();
@@ -1601,14 +1601,12 @@ function resetVideoUI() {
   if(btn) btn.textContent='▶';
 }
 function startNew() {
-  // ── Reset all state variables ──
   visitorData={}; trainingDone=false; examQuestionIndices=[];
   videoWatched=false; maxWatchedPct=0; examAttempt=0;
   examAnswers=[]; examQuestions=[]; currentQ=0;
   slidesSeenSet=new Set(); currentSlide=0;
   clearInterval(timerInterval);
 
-  // ── Reset video ──
   resetVideoUI();
   const vid=$vid();
   if(vid){ vid.pause(); vid.currentTime=0; vid.load(); }
@@ -1618,7 +1616,6 @@ function startNew() {
   if(vlPct) vlPct.textContent='0%';
   if(vlLbl) vlLbl.textContent=(lang==='zh'?'视频加载中…':'Loading video…');
 
-  // ── Reset form fields ──
   ['fFullName','fIdNum','fCompany','fEmail','fPhone','fVehicle',
    'fDate','fHost','fHealth','fEmergency','fPurpose','fDept']
     .forEach(id=>{
@@ -1628,14 +1625,12 @@ function startNew() {
   $el('fDate').valueAsDate=new Date();
   ['ack1','ack2','ack3','ack4'].forEach(id=>{document.getElementById(id).checked=false;});
 
-  // ── Clear field error messages ──
   ['err-fullName','err-idNum','err-company','err-email','err-phone',
    'err-date','err-purpose','err-host','err-emergency']
     .forEach(id=>{ const el=$el(id); if(el) el.textContent=''; });
   const al=$el('form-alert');
   if(al){ al.style.display='none'; $el('form-alert-msg').textContent=''; }
 
-  // ── Reset exam UI ──
   const qArea=$el('questionArea'), examNav=$el('examNav'), scorePanel=$el('scorePanel');
   if(qArea)      { qArea.style.display='block'; qArea.innerHTML=''; }
   if(examNav)    { examNav.style.display='none'; }
@@ -1649,7 +1644,6 @@ function startNew() {
   const examPLabel=$el('examProgressLabel');
   if(examPLabel) examPLabel.textContent='0 / 10';
 
-  // ── Reset training status ──
   trainingDone = false;
   videoWatched = false;
   const ts=$el('training-status');
@@ -1675,36 +1669,23 @@ function lockPlaybackRate() {
 function preventSeek() {
   const vid = $vid();
   if (!vid) return;
-  // Only allow seeking backward or to already-watched positions
   const allowedMax = (maxWatchedPct / 100) * vid.duration;
   if (vid.currentTime > allowedMax + 1) {
     vid.currentTime = allowedMax;
   }
 }
 
-
-
-
 // ═══════════════════════════════════════════════
-// EMAIL RESULT SUMMARY  (via Brevo — free 300/day)
+// EMAIL
 // ═══════════════════════════════════════════════
-// ┌─ ONE-TIME SETUP (3 min) ─────────────────────────────────────────────────┐
-// │ 1. Sign up free at https://app.brevo.com  (no credit card needed)       │
-// │ 2. Go to  SMTP & API  →  API Keys  →  Create a new API key              │
-// │ 3. Paste the key below as BREVO_API_KEY                                 │
-// │ 4. Set BREVO_SENDER_EMAIL to any verified sender address                │
-// │    (verify it under  Senders & IP  →  Senders)                         │
-// └──────────────────────────────────────────────────────────────────────────┘
 const BREVO_API_KEY      = '__BREVO_KEY__';
 const BREVO_SENDER_EMAIL = 'benbfm@gmail.com';
 const BREVO_SENDER_NAME  = 'DIGI-VSM-Service';
 
 function sendResultEmail(score, pass, correct) {
-  // Guard: ensure toast always fires even if something goes wrong
   var TO_ADDR_SAFE = 'dcl-sno-service@duracell.com';
   var _toastFired = false;
   function _toast(ok) { if (!_toastFired) { _toastFired = true; showMailToast(TO_ADDR_SAFE, ok); } }
-  // Timeout fallback: show failure toast if no response within 15s
   var _timeout = setTimeout(function() { _toast(false); }, 15000);
   try {
 
@@ -1721,11 +1702,9 @@ function sendResultEmail(score, pass, correct) {
 
   const subject = t('email_subject_prefix') + ' — ' + name + ' — ' + score + '% — ' + resultTxt;
 
-  // ── Colour scheme ────────────────────────────
   const resultColor = pass ? '#1E7E34' : '#C0392B';
   const resultBg    = pass ? '#e8f5e9' : '#fdecea';
 
-  // ── Q&A rows ─────────────────────────────────
   let qaRows = '';
   examQuestionIndices.forEach(function(qIdx, i) {
     var q = pool[qIdx]; if (!q) return;
@@ -1746,27 +1725,21 @@ function sendResultEmail(score, pass, correct) {
       + '</tr>';
   });
 
-  // ── Labels (bilingual) ────────────────────────
   const reviewLabel     = isZH ? '答题回顾'  : 'Question Review';
   const qLabel          = isZH ? '题目'       : 'Question';
   const yourAnsLabel    = isZH ? '您的答案'   : 'Your Answer';
   const correctAnsLabel = isZH ? '正确答案'   : 'Correct Answer';
   const resultLabel     = isZH ? '结果'       : 'Result';
 
-  // ── HTML email body ───────────────────────────
   const htmlBody = '<!DOCTYPE html>'
     + '<html><head><meta charset="UTF-8"></head>'
     + '<body style="font-family:Arial,sans-serif;background:#f5f0ea;margin:0;padding:20px;">'
     + '<div style="max-width:700px;margin:0 auto;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.12);">'
-
-    // Header
     + '<div style="background:linear-gradient(135deg,#B85A14,#E8920A);padding:28px 32px;text-align:center;">'
     + '<h1 style="color:#fff;font-size:24px;margin:0;letter-spacing:2px;text-transform:uppercase;">Duracell DCL</h1>'
     + '<p style="color:#ffe0b0;margin:6px 0 0;font-size:13px;letter-spacing:1px;">'
     + (isZH ? '访客安全考试结果' : 'Visitor Safety Exam Result')
     + '</p></div>'
-
-    // Result badge
     + '<div style="text-align:center;padding:28px 32px 16px;">'
     + '<div style="display:inline-block;width:96px;height:96px;line-height:96px;border-radius:50%;'
     +   'background:' + resultBg + ';border:3px solid ' + resultColor + ';'
@@ -1776,8 +1749,6 @@ function sendResultEmail(score, pass, correct) {
     + '<p style="color:#888;font-size:13px;margin:0;">'
     + (isZH ? ('答对 ' + correct + '/' + examQuestions.length + ' 题') : (correct + ' of ' + examQuestions.length + ' correct'))
     + '</p></div>'
-
-    // Visitor info table
     + '<div style="padding:8px 32px 20px;">'
     + '<p style="font-size:11px;font-weight:700;color:#B85A14;text-transform:uppercase;letter-spacing:1px;'
     +   'border-bottom:2px solid #f0d9c0;padding-bottom:8px;margin-bottom:12px;">'
@@ -1819,7 +1790,7 @@ function sendResultEmail(score, pass, correct) {
     + '</tr>'
     + '<tr>'
     +   '<td style="padding:7px 12px 7px 0;color:#999;font-size:11px;text-transform:uppercase;">' + (isZH?'访客编号':'Visitor ID') + '</td>'
-    +   '<td style="padding:7px 0;font-weight:600;color:#B85A14;font-family:monospace;">' + (v.uid ? btoa(v.uid) : '—') + '</td>'
+    +   '<td style="padding:7px 0;font-weight:600;color:#B85A14;font-family:monospace;">' + (v.uid || '—') + '</td>'
     +   '<td style="padding:7px 12px 7px 0;color:#999;font-size:11px;text-transform:uppercase;">' + (isZH?'考试次数':'Attempt #') + '</td>'
     +   '<td style="padding:7px 0;font-weight:600;">' + examAttempt + '</td>'
     + '</tr>'
@@ -1830,8 +1801,6 @@ function sendResultEmail(score, pass, correct) {
     +   '<td style="padding:7px 0;font-weight:600;">' + new Date().toLocaleString() + '</td>'
     + '</tr>'
     + '</table></div>'
-
-    // Q&A review
     + '<div style="padding:0 32px 28px;">'
     + '<p style="font-size:11px;font-weight:700;color:#B85A14;text-transform:uppercase;letter-spacing:1px;'
     +   'border-bottom:2px solid #f0d9c0;padding-bottom:8px;margin-bottom:12px;">' + reviewLabel + '</p>'
@@ -1845,16 +1814,12 @@ function sendResultEmail(score, pass, correct) {
     + '</tr></thead>'
     + '<tbody>' + qaRows + '</tbody>'
     + '</table></div>'
-
-    // Footer
     + '<div style="background:#faf0e8;border-top:1px solid #f0d9c0;padding:14px 32px;text-align:center;">'
     + '<p style="color:#bbb;font-size:11px;margin:0;">'
     + (isZH ? '由金霸王 DCL 访客管理系统自动生成' : 'Auto-generated by Duracell DCL Visitor Management System')
     + '</p></div>'
-
     + '</div></body></html>';
 
-  // ── POST directly to Brevo API (key injected at deploy time, never in source) ──
   var brevoPayload = {
     sender:      { name: BREVO_SENDER_NAME, email: BREVO_SENDER_EMAIL },
     to:          [{ email: 'dcl-sno-service@duracell.com' }],
@@ -1883,26 +1848,20 @@ function sendResultEmail(score, pass, correct) {
   });
 
   } catch(e) {
-    // Synchronous error in payload construction — still show failure toast
     clearTimeout(_timeout);
     console.error('sendResultEmail build error:', e);
     _toast(false);
   }
 }
 
-// ── Mail toast notification ───────────────────────────────────────────────
 function showMailToast(toAddr, success) {
   var existing = document.getElementById('mailToast');
   if (existing) existing.remove();
 
   var isZH = lang === 'zh';
   var msg = success
-    ? (isZH
-        ? '邮件已成功发送至 ' + toAddr
-        : 'Mail sent to ' + toAddr + ' successfully')
-    : (isZH
-        ? '邮件发送失败，请检查网络连接'
-        : 'Failed to send mail. Please check your connection.');
+    ? (isZH ? '邮件已成功发送至 ' + toAddr : 'Mail sent to ' + toAddr + ' successfully')
+    : (isZH ? '邮件发送失败，请检查网络连接' : 'Failed to send mail. Please check your connection.');
 
   var icon = success ? '✅' : '⚠️';
   var bgColor = success ? '#1E7E34' : '#C0392B';
@@ -1931,7 +1890,7 @@ function showMailToast(toAddr, success) {
 }
 
 // ═══════════════════════════════════════════════
-// ONCLICK WRAPPERS  (avoids double quotes in HTML)
+// ONCLICK WRAPPERS
 // ═══════════════════════════════════════════════
 function setLangEN(){ setLang('en'); }
 function setLangZH(){ setLang('zh'); }
@@ -1954,7 +1913,7 @@ const HELP = {
       {
         icon: '📝', num: 2, title: 'Visitor Registration',
         desc: 'Complete all required fields accurately. This information is used for site security and emergency purposes.',
-        tips: ['DCL Host must be a valid <strong>@duracell.com</strong> email address', 'All four Safety Acknowledgement checkboxes must be ticked', 'Vehicle plate is optional — leave blank if not driving on site']
+        tips: ['DCL Host must be a valid <strong>@duracell.com</strong> email address', 'Visitor email and DCL Host email must be different', 'All four Safety Acknowledgement checkboxes must be ticked', 'Vehicle plate is optional — leave blank if not driving on site']
       },
       {
         icon: '🎓', num: 3, title: 'Safety Training',
@@ -1986,7 +1945,7 @@ const HELP = {
       {
         icon: '📝', num: 2, title: '访客登记',
         desc: '请如实填写所有必填项目，相关信息将用于厂区安保及紧急联络。',
-        tips: ['DCL 接待人须填写有效的 <strong>@duracell.com</strong> 邮箱地址', '必须勾选全部四项安全确认内容', '车牌号为选填项，如无车辆进厂可留空']
+        tips: ['DCL 接待人须填写有效的 <strong>@duracell.com</strong> 邮箱地址', '访客邮箱与接待人邮箱不能相同', '必须勾选全部四项安全确认内容', '车牌号为选填项，如无车辆进厂可留空']
       },
       {
         icon: '🎓', num: 3, title: '安全培训',
@@ -2043,7 +2002,6 @@ function closeHelpOutside(e) {
   if (e.target === $el('helpOverlay')) closeHelp();
 }
 
-// Re-render help content when language switches (if modal is open)
 var _origSetLang = setLang;
 setLang = function(l) {
   _origSetLang(l);
