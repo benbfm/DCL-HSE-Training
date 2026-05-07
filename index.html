@@ -1562,7 +1562,7 @@ function populatePass() {
 function buildQR(uid) {
   const qr=$el('passQR');
   qr.innerHTML='';
-  const url='https://apps.powerapps.com/play/e/default-82f26667-2afe-4c78-b49d-6d0619d6a76d/a/8764fa64-8455-4ddb-aad1-5fe1bb56cbde?tenantId=82f26667-2afe-4c78-b49d-6d0619d6a76d&hint=6ee57b61-5d70-479b-bdff-fbd05f437d59&hidenavbar=true&sourcetime=1742537686508&myid='+encodeURIComponent(uid);
+  const url='https://apps.powerapps.com/play/e/default-82f26667-2afe-4c78-b49d-6d0619d6a76d/a/5dce497f-44f2-4444-9dc9-aa5af48bf2d9?tenantId=82f26667-2afe-4c78-b49d-6d0619d6a76d&hint=e91002e1-5231-48a5-a818-f4a7100a900b&sourcetime=1778140028518?source=iframe&authMode=Iframe&hidenavbar=true?pcid='+encodeURIComponent(uid);
   try {
     new QRCode(qr, {
       text: url,
