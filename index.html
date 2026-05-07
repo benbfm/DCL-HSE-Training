@@ -1545,13 +1545,15 @@ function populatePass() {
   $el('passSerial').textContent = 'No. ' + (v.uid ? v.uid.split('-').pop() : '—');
   $el('passName').textContent=(v.fullName||'').toUpperCase();
   $el('passCompany').textContent=v.company||'—';
-  $el('passDate').textContent=v.date||'—';
+  // Unified date formatter → YYYY-MM-DD, immune to browser locale
+  const fmtDate = d => d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  const visitDt = v.date ? new Date(v.date+'T00:00:00') : new Date();
+  const validDt = new Date(visitDt); validDt.setDate(validDt.getDate()+30);
+  $el('passDate').textContent=fmtDate(visitDt);
   $el('passScore').textContent=(v.examScore||'—')+'%';
   $el('passHost').textContent=(v.host||'—').replace(/@.*$/,'');
   $el('passUID').textContent=v.uid;
-  const dt=v.date?new Date(v.date):new Date();
-  dt.setDate(dt.getDate()+30);
-  $el('passValidUntil').textContent=dt.toLocaleDateString();
+  $el('passValidUntil').textContent=fmtDate(validDt);
   $el('nextStepsText').innerHTML=t('next_steps');
 
   const emEl = document.querySelector('.pass-emergency-text span');
