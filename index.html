@@ -419,7 +419,7 @@
     <div class='help-modal-head'>
       <div>
         <h2 id='helpTitle'>User Guide</h2>
-        <div class='help-version'>DCL VMS · v1.2.8 · 2026-05-08</div>
+        <div class='help-version'>DCL VMS · v1.2.9 · 2026-05-08</div>
       </div>
       <button class='help-close' onclick='closeHelp()'>✕</button>
     </div>
@@ -1559,7 +1559,7 @@ function populatePass() {
   const validDt = new Date(visitDt); validDt.setDate(validDt.getDate()+30);
   $el('passDate').textContent=fmtDate(visitDt);
   $el('passScore').textContent=(v.examScore||'—')+'%';
-  $el('passHost').textContent=(v.host||'—').replace(/@.*$/,'');
+  $el('passHost').textContent=v.host||'—';
   $el('passUID').textContent=v.uid;
   $el('passValidUntil').textContent=fmtDate(validDt);
   $el('nextStepsText').innerHTML=t('next_steps');
