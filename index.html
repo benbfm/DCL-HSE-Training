@@ -425,7 +425,7 @@
     <div class='help-modal-head'>
       <div>
         <h2 id='helpTitle'>User Guide</h2>
-        <div class='help-version'>DCL VMS · v1.2.8 · 2026-05-08</div>
+        <div class='help-version'>DCL VMS · v1.2.9 · 2026-05-08</div>
       </div>
       <button class='help-close' onclick='closeHelp()'>✕</button>
     </div>
@@ -1213,20 +1213,18 @@ function verifyEmail(fieldId, errId, badgeId, isHost) {
 
   setVerifyBadge(badgeId, fieldId, 'checking', t('verify_checking'));
 
-  // Use Cloudflare DNS-over-HTTPS to verify the email domain has MX records.
-  // No API key, no CORS issues — works from any browser on any origin.
-  var domain = email.split('@')[1];
-  fetch('https://cloudflare-dns.com/dns-query?name=' + encodeURIComponent(domain) + '&type=MX', {
-    headers: { 'Accept': 'application/dns-json' }
-  })
+  // DeBounce free disposable detector — CORS enabled for all origins, no API key needed
+  // Docs: https://disposable.debounce.io
+  fetch('https://disposable.debounce.io/?email=' + encodeURIComponent(email))
     .then(function(res) { return res.json(); })
     .then(function(data) {
-      // Status 0 = NOERROR, and Answer array means MX records exist
-      var ok = data && data.Status === 0 && Array.isArray(data.Answer) && data.Answer.length > 0;
+      // {"disposable":"false"} = real email domain, {"disposable":"true"} = throwaway
+      var ok = data && data.disposable === 'false';
       _verifyCache[email] = ok;
       applyVerifyResult(fieldId, errId, badgeId, ok);
     })
     .catch(function() {
+      // Network error — show warning but never block submission
       var badge = $el(badgeId);
       if (badge) {
         badge.className = 'verify-badge checking';
