@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Redirecting…</title>
+  <script>
+    var id = new URLSearchParams(window.location.search).get('id');
+    if (id) {
+      window.location.replace(
+        'https://apps.powerapps.com/play/e/default-82f26667-2afe-4c78-b49d-6d0619d6a76d/a/5dce497f-44f2-4444-9dc9-aa5af48bf2d9'
+        + '?tenantId=82f26667-2afe-4c78-b49d-6d0619d6a76d'
+        + '&hint=e91002e1-5231-48a5-a818-f4a7100a900b'
+        + '&sourcetime=1778140028518'
+        + '&source=iframe&authMode=Iframe&hidenavbar=true'
+        + '&pcid=' + encodeURIComponent(id)
+      );
+    } else {
+      document.write('Invalid link.');
+    }
+  </script>
+</head>
+<body>
+  <p style="font-family:Arial;text-align:center;margin-top:40px;color:#B85A14">
+    Redirecting to Duracell DCL visitor record…
+  </p>
+</body>
+</html>
