@@ -436,7 +436,7 @@
     <div class='help-modal-head'>
       <div>
         <h2 id='helpTitle'>User Guide</h2>
-        <div class='help-version'>DCL VMS · v1.2.8 · 2026-05-08</div>
+        <div class='help-version'>DCL VMS · v1.2.9 · 2026-05-08</div>
       </div>
       <button class='help-close' onclick='closeHelp()'>✕</button>
     </div>
@@ -1230,50 +1230,80 @@ function checkEmailViaBrevo(fieldId, errId, badgeId) {
 
   setVerifyBadge(badgeId, fieldId, 'checking', t('verify_checking'));
 
-  // Try creating a contact in Brevo — Brevo validates syntax + MX server-side
-  // We immediately delete it after to keep the account clean
-  fetch('https://api.brevo.com/v3/contacts', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'api-key': BREVO_API_KEY
-    },
-    body: JSON.stringify({
-      email: email,
-      listIds: [],
-      updateEnabled: false
-    })
-  })
-  .then(function(res) {
-    if (res.status === 201) {
-      // Created — email is valid, now delete it silently
-      fetch('https://api.brevo.com/v3/contacts/' + encodeURIComponent(email), {
-        method: 'DELETE',
-        headers: { 'api-key': BREVO_API_KEY }
-      }).catch(function(){});  // ignore delete errors
-      _verifyCache[email] = true;
-      applyBrevoResult(fieldId, errId, badgeId, email, true);
-    } else {
-      return res.json().then(function(data) {
-        // 400 = invalid email (bad domain/MX/format)
-        // 204 = contact already exists — also means email is real
-        var alreadyExists = (res.status === 400 && data && data.code === 'duplicate_parameter');
-        if (alreadyExists) {
+  // Step 1: Check domain MX via DeBounce (free, CORS-enabled, no key needed)
+  // This catches fake domains like xqqx.com that Brevo accepts anyway
+  var domain = email.split('@')[1];
+  fetch('https://disposable.debounce.io/?email=' + encodeURIComponent(email))
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+      // disposable:"true" = throwaway address → reject
+      if (data && data.disposable === 'true') {
+        _verifyCache[email] = false;
+        applyBrevoResult(fieldId, errId, badgeId, email, false);
+        return;
+      }
+      // Step 2: Try creating contact in Brevo — catches syntax errors
+      // Note: Brevo does NOT check MX, so we rely on DeBounce + Brevo combined
+      return fetch('https://api.brevo.com/v3/contacts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'api-key': BREVO_API_KEY
+        },
+        body: JSON.stringify({
+          email: email,
+          listIds: [],
+          updateEnabled: false
+        })
+      })
+      .then(function(res) {
+        if (res.status === 201) {
+          // Created — delete silently to keep account clean
+          fetch('https://api.brevo.com/v3/contacts/' + encodeURIComponent(email), {
+            method: 'DELETE',
+            headers: { 'api-key': BREVO_API_KEY }
+          }).catch(function(){});
           _verifyCache[email] = true;
           applyBrevoResult(fieldId, errId, badgeId, email, true);
         } else {
-          _verifyCache[email] = false;
-          applyBrevoResult(fieldId, errId, badgeId, email, false);
+          return res.json().then(function(d) {
+            var alreadyExists = (res.status === 400 && d && d.code === 'duplicate_parameter');
+            var ok = alreadyExists;
+            _verifyCache[email] = ok;
+            applyBrevoResult(fieldId, errId, badgeId, email, ok);
+          });
         }
       });
-    }
-  })
-  .catch(function() {
-    // Network error — show warning, do not block submission
-    var badge = $el(badgeId);
-    if (badge) { badge.className = 'verify-badge checking'; badge.innerHTML = '⚠️ ' + t('verify_failed'); }
-    if (input) input.classList.remove('verified','verifying','error');
-  });
+    })
+    .catch(function() {
+      // If DeBounce fails, fall back to Brevo only
+      fetch('https://api.brevo.com/v3/contacts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'api-key': BREVO_API_KEY },
+        body: JSON.stringify({ email: email, listIds: [], updateEnabled: false })
+      })
+      .then(function(res) {
+        var ok = (res.status === 201);
+        if (!ok) {
+          return res.json().then(function(d) {
+            ok = (res.status === 400 && d && d.code === 'duplicate_parameter');
+            _verifyCache[email] = ok;
+            applyBrevoResult(fieldId, errId, badgeId, email, ok);
+          });
+        } else {
+          fetch('https://api.brevo.com/v3/contacts/' + encodeURIComponent(email), {
+            method: 'DELETE', headers: { 'api-key': BREVO_API_KEY }
+          }).catch(function(){});
+          _verifyCache[email] = true;
+          applyBrevoResult(fieldId, errId, badgeId, email, true);
+        }
+      })
+      .catch(function() {
+        var badge = $el(badgeId);
+        if (badge) { badge.className = 'verify-badge checking'; badge.innerHTML = '⚠️ ' + t('verify_failed'); }
+        if (input) input.classList.remove('verified','verifying','error');
+      });
+    });
 }
 
 function applyBrevoResult(fieldId, errId, badgeId, email, ok) {
