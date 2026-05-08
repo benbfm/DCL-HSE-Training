@@ -1213,16 +1213,18 @@ function verifyEmail(fieldId, errId, badgeId, isHost) {
 
   setVerifyBadge(badgeId, fieldId, 'checking', t('verify_checking'));
 
-  fetch('https://rapid-email-verifier.fly.dev/api/validate?email=' + encodeURIComponent(email))
+  // mailcheck.ai — free, no API key, CORS-enabled
+  // Returns: { mx: true/false, disposable: true/false, alias: true/false }
+  fetch('https://api.mailcheck.ai/email/' + encodeURIComponent(email))
     .then(function(res) { return res.json(); })
     .then(function(data) {
-      // API returns: { valid: true/false, reason: '...' }
-      var ok = data && (data.valid === true || data.status === 'valid' || data.is_valid === true);
+      // Valid = has MX records AND not a disposable/throwaway address
+      var ok = data && data.mx === true && data.disposable !== true;
       _verifyCache[email] = ok;
       applyVerifyResult(fieldId, errId, badgeId, ok);
     })
     .catch(function() {
-      // Network error — show warning but don't block submission
+      // Network/CORS error — show warning but never block submission
       var badge = $el(badgeId);
       if (badge) {
         badge.className = 'verify-badge checking';
