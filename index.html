@@ -179,8 +179,7 @@
   .pass-field label, .pass-label { font-size:10px; color:#999; text-transform:uppercase; letter-spacing:1px; display:inline; white-space:nowrap; }
   .pass-field span { font-size:11px; color:#222; font-weight:600; }
   .pass-qr-box { width:100%; height:auto; flex-shrink:0; background:#fff; padding:6px; border-radius:6px; border:1px solid rgba(0,0,0,.12); display:flex; align-items:center; justify-content:center; overflow:hidden; }
-  .pass-qr-box canvas { display:block; width:100% !important; height:auto !important; max-width:200px; margin:0 auto; }
-  .pass-qr-box img { display:block; width:100% !important; height:auto !important; max-width:200px; margin:0 auto; }
+  .pass-qr-box img { display:block; width:200px; height:200px; }
   .pass-uid-strip { text-align:center; padding:6px 18px; font-size:10px; color:#888; letter-spacing:1px; border-top:1px solid rgba(0,0,0,.07); margin-top:12px; }
   .pass-uid-strip strong { color:var(--pass-color,#D4580A); font-family:'Barlow Condensed',sans-serif; font-size:12px; letter-spacing:2.5px; }
   .pass-emergency-strip { background:var(--pass-light,#FFF3E8); border-top:2px solid var(--pass-border,#E8920A); padding:10px 18px; display:flex; align-items:center; gap:8px; }
@@ -305,7 +304,7 @@
     .visitor-pass { margin:14px auto; }
     .pass-name { font-size:19px; }
 
-    .pass-qr-box canvas { max-width:160px; }
+    .pass-qr-box img { width:160px; height:160px; }
     .pass-field span { font-size:12px; }
   }
 
@@ -1572,12 +1571,15 @@ function populatePass() {
 }
 
 function buildQR(uid) {
-  const qr=$el('passQR');
-  qr.innerHTML='';
-  // Full PowerApps URL with UID appended — rendered at 200px for density/scannability balance
-  const url='https://apps.powerapps.com/play/e/default-82f26667-2afe-4c78-b49d-6d0619d6a76d/a/5dce497f-44f2-4444-9dc9-aa5af48bf2d9?tenantId=82f26667-2afe-4c78-b49d-6d0619d6a76d&hint=e91002e1-5231-48a5-a818-f4a7100a900b&sourcetime=1778140028518&source=iframe&authMode=Iframe&hidenavbar=true&pcid='+encodeURIComponent(uid);
+  const qr = $el('passQR');
+  qr.innerHTML = '';
+  const url = 'https://apps.powerapps.com/play/e/default-82f26667-2afe-4c78-b49d-6d0619d6a76d/a/5dce497f-44f2-4444-9dc9-aa5af48bf2d9?tenantId=82f26667-2afe-4c78-b49d-6d0619d6a76d&hint=e91002e1-5231-48a5-a818-f4a7100a900b&sourcetime=1778140028518&source=iframe&authMode=Iframe&hidenavbar=true&pcid=' + encodeURIComponent(uid);
   try {
-    new QRCode(qr, {
+    // Use a hidden off-screen div to render QR, then extract canvas as data URL
+    var tmp = document.createElement('div');
+    tmp.style.cssText = 'position:absolute;left:-9999px;top:-9999px;width:200px;height:200px';
+    document.body.appendChild(tmp);
+    new QRCode(tmp, {
       text: url,
       width: 200,
       height: 200,
@@ -1585,19 +1587,29 @@ function buildQR(uid) {
       colorLight: '#ffffff',
       correctLevel: QRCode.CorrectLevel.L
     });
-    setTimeout(function(){
-      const canvas = qr.querySelector('canvas');
-      const img    = qr.querySelector('img');
-      if(canvas) {
-        visitorData.qrBase64 = canvas.toDataURL('image/png');
-        // Canvas rendered — hide the duplicate img tag to prevent double render
-        if(img) img.style.display = 'none';
-      } else if(img) {
-        // No canvas (desktop fallback) — show img instead
-        visitorData.qrBase64 = img.src;
-        img.style.display = 'block';
+    setTimeout(function() {
+      var canvas = tmp.querySelector('canvas');
+      var dataUrl = canvas ? canvas.toDataURL('image/png') : null;
+      // If no canvas, try img src (some browsers use img instead)
+      if (!dataUrl) {
+        var imgEl = tmp.querySelector('img');
+        if (imgEl) dataUrl = imgEl.src;
       }
-    }, 300);
+      document.body.removeChild(tmp);
+      if (dataUrl) {
+        visitorData.qrBase64 = dataUrl;
+        var img = document.createElement('img');
+        img.src = dataUrl;
+        img.width = 200;
+        img.height = 200;
+        img.style.display = 'block';
+        qr.innerHTML = '';
+        qr.appendChild(img);
+      } else {
+        // Final fallback: plain text UID
+        qr.textContent = uid;
+      }
+    }, 400);
   } catch(e) {
     qr.textContent = uid;
   }
