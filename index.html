@@ -436,7 +436,7 @@
     <div class='help-modal-head'>
       <div>
         <h2 id='helpTitle'>User Guide</h2>
-        <div class='help-version'>DCL VMS · v1.2.9 · 2026-05-08</div>
+        <div class='help-version'>DCL VMS · v1.2.8 · 2026-05-08</div>
       </div>
       <button class='help-close' onclick='closeHelp()'>✕</button>
     </div>
@@ -1205,6 +1205,17 @@ function onEmailInput(fieldId, errId, badgeId) {
   if (badge) { badge.className = 'verify-badge'; badge.innerHTML = ''; }
   var input = $el(fieldId);
   if (input) input.classList.remove('verified','error','verifying');
+  // Re-validate the other field if it was previously blocked by same-email rule
+  var otherFId = fieldId === 'fEmail' ? 'fHost' : 'fEmail';
+  var otherErrId = fieldId === 'fEmail' ? 'err-host' : 'err-email';
+  var otherBadgeId = fieldId === 'fEmail' ? 'vbadge-host' : 'vbadge-email';
+  var otherInput = $el(otherFId);
+  if (otherInput && otherInput.value.trim()) {
+    clearTimeout(_verifyTimers[otherFId]);
+    _verifyTimers[otherFId] = setTimeout(function() {
+      checkEmailViaBrevo(otherFId, otherErrId, otherBadgeId);
+    }, 300);
+  }
   // Debounce verify call
   clearTimeout(_verifyTimers[fieldId]);
   var val = (input ? input.value.trim() : '');
@@ -1221,6 +1232,16 @@ function checkEmailViaBrevo(fieldId, errId, badgeId) {
   if (!input) return;
   var email = input.value.trim().toLowerCase();
   if (!email) return;
+
+  // Cross-field same-email check
+  var otherFieldId = fieldId === 'fEmail' ? 'fHost' : 'fEmail';
+  var otherEl = $el(otherFieldId);
+  if (otherEl && otherEl.value.trim().toLowerCase() === email) {
+    _verifyDone[fieldId] = false;
+    setVerifyBadge(badgeId, fieldId, 'bad', t('err_email_same_as_host'));
+    var errEl2 = $el(errId); if (errEl2) errEl2.textContent = t('err_email_same_as_host');
+    return;
+  }
 
   // Use cache
   if (_verifyCache[email] !== undefined) {
@@ -1398,13 +1419,16 @@ function submitForm() {
     if(!errs.includes(t('err_host'))) errs.push(t('err_host'));
   }
 
-  // ── NEW: visitor email must not equal host email ──
+  // ── visitor email must not equal host email ──
   const visitorEmail = emailEl.value.trim().toLowerCase();
   const hostEmail    = hostEl.value.trim().toLowerCase();
   if(visitorEmail && hostEmail && visitorEmail === hostEmail){
     emailEl.classList.add('error');
+    hostEl.classList.add('error');
     const errEmail=$el('err-email');
+    const errHost=$el('err-host');
     if(errEmail) errEmail.textContent = t('err_email_same_as_host');
+    if(errHost)  errHost.textContent  = t('err_email_same_as_host');
     errs.push(t('err_email_same_as_host'));
   }
 
