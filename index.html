@@ -180,7 +180,7 @@
   .pass-field span { font-size:11px; color:#222; font-weight:600; }
   .pass-qr-box { width:100%; height:auto; flex-shrink:0; background:#fff; padding:6px; border-radius:6px; border:1px solid rgba(0,0,0,.12); display:flex; align-items:center; justify-content:center; overflow:hidden; }
   .pass-qr-box canvas { display:block; width:100% !important; height:auto !important; max-width:200px; margin:0 auto; }
-  .pass-qr-box img { display:none; }
+  .pass-qr-box img { display:block; width:100% !important; height:auto !important; max-width:200px; margin:0 auto; }
   .pass-uid-strip { text-align:center; padding:6px 18px; font-size:10px; color:#888; letter-spacing:1px; border-top:1px solid rgba(0,0,0,.07); margin-top:12px; }
   .pass-uid-strip strong { color:var(--pass-color,#D4580A); font-family:'Barlow Condensed',sans-serif; font-size:12px; letter-spacing:2.5px; }
   .pass-emergency-strip { background:var(--pass-light,#FFF3E8); border-top:2px solid var(--pass-border,#E8920A); padding:10px 18px; display:flex; align-items:center; gap:8px; }
@@ -227,7 +227,6 @@
     .slide-body { font-size:13px; }
     .score-display { padding:28px 14px; }
     .visitor-pass { max-width:100%; }
-    .pass-info-qr { flex-direction:row; }
     .exam-header { flex-direction:column; align-items:stretch; }
     .timer-chip { align-self:flex-end; }
     .onboard-card { padding:20px 16px; }
@@ -305,7 +304,7 @@
     .onboard-badge { width:56px; height:56px; font-size:24px; }
     .visitor-pass { margin:14px auto; }
     .pass-name { font-size:19px; }
-    .pass-info-qr { flex-direction:row; }
+
     .pass-qr-box canvas { max-width:160px; }
     .pass-field span { font-size:12px; }
   }
@@ -421,7 +420,7 @@
     <div class='help-modal-head'>
       <div>
         <h2 id='helpTitle'>User Guide</h2>
-        <div class='help-version'>DCL VMS · v1.2.8 · 2026-05-08</div>
+        <div class='help-version'>DCL VMS · v1.2.9 · 2026-05-08</div>
       </div>
       <button class='help-close' onclick='closeHelp()'>✕</button>
     </div>
@@ -1591,10 +1590,12 @@ function buildQR(uid) {
       const img    = qr.querySelector('img');
       if(canvas) {
         visitorData.qrBase64 = canvas.toDataURL('image/png');
-        // Remove duplicate img tag injected by QRCode.js on some browsers
+        // Canvas rendered — hide the duplicate img tag to prevent double render
         if(img) img.style.display = 'none';
       } else if(img) {
+        // No canvas (desktop fallback) — show img instead
         visitorData.qrBase64 = img.src;
+        img.style.display = 'block';
       }
     }, 300);
   } catch(e) {
