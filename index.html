@@ -194,6 +194,12 @@
   .alert-success { background:rgba(42,122,59,.07); border:1px solid rgba(42,122,59,.22); color:#1A5C2A; }
   .divider { height:1px; background:var(--card-border); margin:20px 0; }
   input.error,select.error { border-color:var(--red); box-shadow:0 0 0 3px rgba(176,36,28,.1); }
+  input.verified { border-color:var(--green); box-shadow:0 0 0 3px rgba(42,122,59,.1); }
+  input.verifying { border-color:var(--gold); box-shadow:0 0 0 3px rgba(232,146,10,.1); }
+  .verify-badge { display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; margin-top:3px; }
+  .verify-badge.ok  { color:var(--green); }
+  .verify-badge.bad { color:var(--red); }
+  .verify-badge.checking { color:var(--gold); }
   .field-error { color:var(--red); font-size:12px; margin-top:2px; }
 
   .video-wrap { position:relative; background:#000; border-radius:8px; overflow:hidden; margin-bottom:12px; width:100%; aspect-ratio:16/9; }
@@ -466,7 +472,7 @@
     <div class='form-group'><label for='fEmergency' data-i18n='lbl_emergency'>Emergency Contact *</label><input type='text' id='fEmergency' data-i18n-ph='ph_emergency'><span class='field-error' id='err-emergency'></span></div>
     <div class='form-group'><label for='fIdNum' data-i18n='lbl_id'>ID / Passport *</label><input type='text' id='fIdNum' data-i18n-ph='ph_id'><span class='field-error' id='err-idNum'></span></div>
     <div class='form-group'><label for='fCompany' data-i18n='lbl_company'>Company *</label><input type='text' id='fCompany' data-i18n-ph='ph_company'><span class='field-error' id='err-company'></span></div>
-    <div class='form-group'><label for='fEmail' data-i18n='lbl_email'>Email *</label><input type='email' id='fEmail' placeholder='name@company.com'><span class='field-error' id='err-email'></span></div>
+    <div class='form-group'><label for='fEmail' data-i18n='lbl_email'>Email *</label><input type='email' id='fEmail' placeholder='name@company.com' oninput='scheduleVerify("fEmail","err-email","vbadge-email",false)'><span class='field-error' id='err-email'></span><span class='verify-badge' id='vbadge-email'></span></div>
     <div class='form-group'><label for='fPhone' data-i18n='lbl_phone'>Phone *</label><input type='tel' id='fPhone' placeholder='+86 / +1 ...'><span class='field-error' id='err-phone'></span></div>
     <div class='form-group'><label for='fVehicle' data-i18n='lbl_vehicle'>Vehicle Plate</label><input type='text' id='fVehicle' data-i18n-ph='ph_vehicle'></div>
     <div class='form-group'><label for='fDate' data-i18n='lbl_date'>Visit Date *</label><input type='date' id='fDate'><span class='field-error' id='err-date'></span></div>
@@ -484,7 +490,7 @@
       </select>
       <span class='field-error' id='err-purpose'></span>
     </div>
-    <div class='form-group'><label for='fHost' data-i18n='lbl_host'>DCL Host *</label><input type='email' id='fHost' data-i18n-ph='ph_host'><span class='field-error' id='err-host'></span></div>
+    <div class='form-group'><label for='fHost' data-i18n='lbl_host'>DCL Host *</label><input type='email' id='fHost' data-i18n-ph='ph_host' oninput='scheduleVerify("fHost","err-host","vbadge-host",true)'><span class='field-error' id='err-host'></span><span class='verify-badge' id='vbadge-host'></span></div>
     <div class='form-group'>
       <label for='fDept' data-i18n='lbl_dept'>Department</label>
       <select id='fDept'>
@@ -722,7 +728,11 @@ en:{
   err_company_num:'Company name cannot be numbers only',
   err_email:'Valid email is required', err_email_fmt:'Invalid email format',
   err_email_same_as_host:'Visitor email cannot be the same as the DCL host email',
-  err_phone:'Phone number is required', err_date:'Visit date is required',
+  verify_checking:'Verifying…',
+  verify_ok:'Email verified',
+  verify_invalid:'Email address does not exist',
+  verify_failed:'Could not verify — check your connection',
+  err_phone:'Phone number is required', err_date:'Visit date is required', err_date_past:'Visit date cannot be in the past',
   err_purpose:'Purpose of visit is required', err_host:'A valid @duracell.com email is required',
   err_emergency:'Emergency contact is required', err_ack:'Please accept all safety acknowledgements',
   train_title:'Safety Training',
@@ -894,7 +904,11 @@ zh:{
   err_company_num:'公司名称不能为纯数字',
   err_email:'请填写有效的电子邮件', err_email_fmt:'电子邮件格式不正确',
   err_email_same_as_host:'访客邮箱不能与 DCL 接待人邮箱相同',
-  err_phone:'请填写联系电话', err_date:'请选择到访日期',
+  verify_checking:'验证中…',
+  verify_ok:'邮箱地址有效',
+  verify_invalid:'邮箱地址不存在',
+  verify_failed:'无法验证，请检查网络连接',
+  err_phone:'请填写联系电话', err_date:'请选择到访日期', err_date_past:'到访日期不能早于今天',
   err_purpose:'请选择到访目的', err_host:'请填写有效的 @duracell.com 邮箱地址',
   err_emergency:'请填写紧急联系人信息', err_ack:'请勾选所有安全确认项',
   train_title:'安全培训',
@@ -1145,6 +1159,90 @@ function updateDots(n) {
 // ═══════════════════════════════════════════════
 // FORM
 // ═══════════════════════════════════════════════
+// ═══════════════════════════════════════════════
+// EMAIL VERIFICATION
+// ═══════════════════════════════════════════════
+var _verifyTimers = {};
+var _verifyCache  = {};  // cache results to avoid re-calling same address
+
+function scheduleVerify(fieldId, errId, badgeId, isHost) {
+  // Debounce: wait 800ms after user stops typing
+  clearTimeout(_verifyTimers[fieldId]);
+  _verifyTimers[fieldId] = setTimeout(function() {
+    verifyEmail(fieldId, errId, badgeId, isHost);
+  }, 800);
+}
+
+function setVerifyBadge(badgeId, fieldId, state, msg) {
+  var badge = $el(badgeId);
+  var input = $el(fieldId);
+  if (!badge || !input) return;
+  badge.className = 'verify-badge ' + state;
+  badge.innerHTML = state === 'ok' ? '✅ ' + msg
+                  : state === 'bad' ? '❌ ' + msg
+                  : '⏳ ' + msg;
+  input.classList.remove('verified','verifying','error');
+  if (state === 'ok')       input.classList.add('verified');
+  else if (state === 'bad') input.classList.add('error');
+  else                      input.classList.add('verifying');
+}
+
+function verifyEmail(fieldId, errId, badgeId, isHost) {
+  var input = $el(fieldId);
+  if (!input) return;
+  var email = input.value.trim().toLowerCase();
+
+  // Clear badge if empty
+  if (!email) {
+    var b = $el(badgeId); if (b) { b.className = 'verify-badge'; b.innerHTML = ''; }
+    input.classList.remove('verified','verifying','error');
+    return;
+  }
+
+  // Basic format check first
+  if (!/^\S+@\S+\.\S+$/.test(email)) return;
+
+  // Host must be @duracell.com — no need to API-verify format errors
+  if (isHost && !/^[^\s@]+@duracell\.com$/i.test(email)) return;
+
+  // Use cache if already verified
+  if (_verifyCache[email] !== undefined) {
+    applyVerifyResult(fieldId, errId, badgeId, _verifyCache[email]);
+    return;
+  }
+
+  setVerifyBadge(badgeId, fieldId, 'checking', t('verify_checking'));
+
+  fetch('https://rapid-email-verifier.fly.dev/api/validate?email=' + encodeURIComponent(email))
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+      // API returns: { valid: true/false, reason: '...' }
+      var ok = data && (data.valid === true || data.status === 'valid' || data.is_valid === true);
+      _verifyCache[email] = ok;
+      applyVerifyResult(fieldId, errId, badgeId, ok);
+    })
+    .catch(function() {
+      // Network error — show warning but don't block submission
+      var badge = $el(badgeId);
+      if (badge) {
+        badge.className = 'verify-badge checking';
+        badge.innerHTML = '⚠️ ' + t('verify_failed');
+      }
+      $el(fieldId).classList.remove('verified','verifying','error');
+    });
+}
+
+function applyVerifyResult(fieldId, errId, badgeId, ok) {
+  var errEl = $el(errId);
+  if (ok) {
+    setVerifyBadge(badgeId, fieldId, 'ok', t('verify_ok'));
+    if (errEl) errEl.textContent = '';
+  } else {
+    setVerifyBadge(badgeId, fieldId, 'bad', t('verify_invalid'));
+    if (errEl) errEl.textContent = t('verify_invalid');
+  }
+}
+
 function submitForm() {
   const validate=(id,errId,msgKey)=>{
     const el=$el(id), errEl=$el(errId);
@@ -1164,6 +1262,18 @@ function submitForm() {
     validate('fHost','err-host','err_host'),
     validate('fEmergency','err-emergency','err_emergency'),
   ].filter(Boolean);
+
+  // Visit date must not be in the past
+  var dateEl = $el('fDate');
+  if (dateEl.value) {
+    var today = new Date(); today.setHours(0,0,0,0);
+    var chosen = new Date(dateEl.value + 'T00:00:00');
+    if (chosen < today) {
+      dateEl.classList.add('error');
+      var errDate = $el('err-date'); if (errDate) errDate.textContent = t('err_date_past');
+      errs.push(t('err_date_past'));
+    }
+  }
 
   // Name must not contain any digit
   const nameEl=$el('fFullName');
@@ -1649,12 +1759,14 @@ function startNew() {
       const el=document.getElementById(id);
       if(el){ el.value=''; el.classList.remove('error'); }
     });
-  $el('fDate').valueAsDate=new Date();
+  setDateMin();
   ['ack1','ack2','ack3','ack4'].forEach(id=>{document.getElementById(id).checked=false;});
 
   ['err-fullName','err-idNum','err-company','err-email','err-phone',
    'err-date','err-purpose','err-host','err-emergency']
     .forEach(id=>{ const el=$el(id); if(el) el.textContent=''; });
+  ['vbadge-email','vbadge-host'].forEach(id=>{ const el=$el(id); if(el){ el.className='verify-badge'; el.innerHTML=''; } });
+  _verifyCache = {};
   const al=$el('form-alert');
   if(al){ al.style.display='none'; $el('form-alert-msg').textContent=''; }
 
@@ -2060,7 +2172,14 @@ setLang = function(l) {
 // ═══════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════
-$el('fDate').valueAsDate=new Date();
+// Set date field min to today and default to today
+function setDateMin() {
+  var d = new Date();
+  var min = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  var el = $el('fDate');
+  if (el) { el.min = min; el.value = min; }
+}
+setDateMin();
 applyTranslations();
 </script>
 </body>
