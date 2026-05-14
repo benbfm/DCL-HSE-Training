@@ -277,6 +277,9 @@
     .btn { padding:11px 18px; font-size:13px; }
     .btn-row { flex-direction:column; align-items:stretch; }
     .btn-row .btn { text-align:center; justify-content:center; }
+    /* Exam nav always stays on one row — never stacks */
+    .btn-row-exam { flex-direction:row !important; align-items:center !important; justify-content:center !important; flex-wrap:nowrap !important; gap:8px !important; }
+    .btn-row-exam .btn { flex:1; min-width:0; padding:11px 10px; font-size:12px; letter-spacing:0; justify-content:center; }
 
     /* Form */
     .screen-title { font-size:20px; }
@@ -436,7 +439,7 @@
     <div class='help-modal-head'>
       <div>
         <h2 id='helpTitle'>User Guide</h2>
-        <div class='help-version'>DCL VMS · v1.2.8 · 2026-05-08</div>
+        <div class='help-version'>DCL VMS · v1.3.0 · 2026-05-14</div>
       </div>
       <button class='help-close' onclick='closeHelp()'>✕</button>
     </div>
@@ -610,7 +613,7 @@
   </div>
   <div id='questionArea'></div>
   <div id='examNav' style='display:none'>
-    <div class='btn-row'>
+    <div class='btn-row btn-row-exam'>
       <button class='btn btn-secondary' id='btnPrevQ' onclick='prevQuestion()' data-i18n='btn_prev_q'>← Previous</button>
       <button class='btn btn-primary' id='btnNextQ' onclick='nextQuestion()' data-i18n='btn_next_q'>Next →</button>
       <button class='btn btn-success' id='btnSubmitExam' style='display:none' onclick='submitExam()' data-i18n='btn_submit_exam'>Submit Exam ✓</button>
@@ -1190,8 +1193,12 @@ function updateDots(n) {
 // ═══════════════════════════════════════════════
 // FORM
 // ═══════════════════════════════════════════════
+
 // ═══════════════════════════════════════════════
-// EMAIL VERIFICATION — replaced with rapid-email-verifier.fly.dev
+// EMAIL VERIFICATION — rapid-email-verifier (primary)
+// with Google DoH MX fallback, then format-only fallback
+// Replaces the previous 3-layer Google DoH + DeBounce + Brevo pipeline
+// which was slow (~2-5s), GFW-blocked in China, and burned Brevo quota.
 // ═══════════════════════════════════════════════
 var _verifyCache   = {};  // { email: true/false }
 var _verifyTimers  = {};  // debounce timers
@@ -1232,17 +1239,17 @@ function checkEmailViaBrevo(fieldId, errId, badgeId) {
   var email = input.value.trim().toLowerCase();
   if (!email) return;
 
-  // Cross-field same-email check (pure logic, no network call)
+  // Cross-field same-email check
   var otherFieldId = fieldId === 'fEmail' ? 'fHost' : 'fEmail';
   var otherEl = $el(otherFieldId);
   if (otherEl && otherEl.value.trim().toLowerCase() === email) {
     _verifyDone[fieldId] = false;
     setVerifyBadge(badgeId, fieldId, 'bad', t('err_email_same_as_host'));
-    var errEl = $el(errId); if (errEl) errEl.textContent = t('err_email_same_as_host');
+    var errEl2 = $el(errId); if (errEl2) errEl2.textContent = t('err_email_same_as_host');
     return;
   }
 
-  // Cache hit — no repeat network call for the same address
+  // Cache hit — no network call needed
   if (_verifyCache[email] !== undefined) {
     applyBrevoResult(fieldId, errId, badgeId, email, _verifyCache[email]);
     return;
@@ -1250,7 +1257,7 @@ function checkEmailViaBrevo(fieldId, errId, badgeId) {
 
   setVerifyBadge(badgeId, fieldId, 'checking', t('verify_checking'));
 
-  // Single call: MX + disposable + syntax — free, no key, ~25 ms
+  // ── PRIMARY: rapid-email-verifier (free, no key, ~25ms, MX + disposable + syntax) ──
   fetch('https://rapid-email-verifier.fly.dev/validate?email=' + encodeURIComponent(email))
     .then(function(res) { return res.json(); })
     .then(function(data) {
@@ -1259,8 +1266,9 @@ function checkEmailViaBrevo(fieldId, errId, badgeId) {
       applyBrevoResult(fieldId, errId, badgeId, email, ok);
     })
     .catch(function() {
-      // Fallback 1: MX check via Google DoH (works outside China)
-      fetch('https://dns.google/resolve?name=' + encodeURIComponent(email.split('@')[1]) + '&type=MX', {
+      // ── FALLBACK 1: Google DNS-over-HTTPS MX check ──
+      var domain = email.split('@')[1];
+      fetch('https://dns.google/resolve?name=' + encodeURIComponent(domain) + '&type=MX', {
         headers: { 'Accept': 'application/dns-json' }
       })
       .then(function(r) { return r.json(); })
@@ -1270,7 +1278,7 @@ function checkEmailViaBrevo(fieldId, errId, badgeId) {
         applyBrevoResult(fieldId, errId, badgeId, email, ok);
       })
       .catch(function() {
-        // Fallback 2: format check only — never block the user on a network failure
+        // ── FALLBACK 2: format-only — never block the user on network failure ──
         var ok = /^\S+@\S+\.\S+$/.test(email);
         _verifyCache[email] = ok;
         applyBrevoResult(fieldId, errId, badgeId, email, ok);
@@ -1740,7 +1748,6 @@ function populatePass() {
   $el('passSerial').textContent = 'No. ' + (v.uid ? v.uid.split('-').pop() : '—');
   $el('passName').textContent=(v.fullName||'').toUpperCase();
   $el('passCompany').textContent=v.company||'—';
-  // Unified date formatter → YYYY-MM-DD, immune to browser locale
   const fmtDate = d => d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
   const visitDt = v.date ? new Date(v.date+'T00:00:00') : new Date();
   const validDt = new Date(visitDt); validDt.setDate(validDt.getDate()+30);
@@ -1762,7 +1769,6 @@ function buildQR(uid) {
   qr.innerHTML = '';
   const url = 'https://apps.powerapps.com/play/e/default-82f26667-2afe-4c78-b49d-6d0619d6a76d/a/5dce497f-44f2-4444-9dc9-aa5af48bf2d9?tenantId=82f26667-2afe-4c78-b49d-6d0619d6a76d&hint=e91002e1-5231-48a5-a818-f4a7100a900b&sourcetime=1778140028518&source=iframe&authMode=Iframe&hidenavbar=true&pcid=' + encodeURIComponent(uid);
   try {
-    // Use a hidden off-screen div to render QR, then extract canvas as data URL
     var tmp = document.createElement('div');
     tmp.style.cssText = 'position:absolute;left:-9999px;top:-9999px;width:200px;height:200px';
     document.body.appendChild(tmp);
@@ -1777,7 +1783,6 @@ function buildQR(uid) {
     setTimeout(function() {
       var canvas = tmp.querySelector('canvas');
       var dataUrl = canvas ? canvas.toDataURL('image/png') : null;
-      // If no canvas, try img src (some browsers use img instead)
       if (!dataUrl) {
         var imgEl = tmp.querySelector('img');
         if (imgEl) dataUrl = imgEl.src;
@@ -1793,7 +1798,6 @@ function buildQR(uid) {
         qr.innerHTML = '';
         qr.appendChild(img);
       } else {
-        // Final fallback: plain text UID
         qr.textContent = uid;
       }
     }, 400);
@@ -1893,7 +1897,7 @@ function preventSeek() {
 }
 
 // ═══════════════════════════════════════════════
-// EMAIL
+// EMAIL (Brevo SMTP — result dispatch only, not verification)
 // ═══════════════════════════════════════════════
 const BREVO_API_KEY      = '__BREVO_KEY__';
 const BREVO_SENDER_EMAIL = 'benbfm@gmail.com';
@@ -2050,7 +2054,6 @@ function sendResultEmail(score, pass, correct) {
     h += '</div></body></html>';
     return h;
   })();
-
 
   var brevoPayload = {
     sender:      { name: BREVO_SENDER_NAME, email: BREVO_SENDER_EMAIL },
@@ -2244,7 +2247,6 @@ setLang = function(l) {
 // ═══════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════
-// Set date field min to today and default to today
 function setDateMin() {
   var d = new Date();
   var min = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
