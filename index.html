@@ -436,7 +436,7 @@
     <div class='help-modal-head'>
       <div>
         <h2 id='helpTitle'>User Guide</h2>
-        <div class='help-version'>DCL VMS · v1.2.9 · 2026-05-08</div>
+        <div class='help-version'>DCL VMS · v1.2.8 · 2026-05-08</div>
       </div>
       <button class='help-close' onclick='closeHelp()'>✕</button>
     </div>
@@ -1191,8 +1191,7 @@ function updateDots(n) {
 // FORM
 // ═══════════════════════════════════════════════
 // ═══════════════════════════════════════════════
-// ═══════════════════════════════════════════════
-// EMAIL VERIFICATION — Brevo contact check
+// EMAIL VERIFICATION — replaced with rapid-email-verifier.fly.dev
 // ═══════════════════════════════════════════════
 var _verifyCache   = {};  // { email: true/false }
 var _verifyTimers  = {};  // debounce timers
@@ -1233,17 +1232,17 @@ function checkEmailViaBrevo(fieldId, errId, badgeId) {
   var email = input.value.trim().toLowerCase();
   if (!email) return;
 
-  // Cross-field same-email check
+  // Cross-field same-email check (pure logic, no network call)
   var otherFieldId = fieldId === 'fEmail' ? 'fHost' : 'fEmail';
   var otherEl = $el(otherFieldId);
   if (otherEl && otherEl.value.trim().toLowerCase() === email) {
     _verifyDone[fieldId] = false;
     setVerifyBadge(badgeId, fieldId, 'bad', t('err_email_same_as_host'));
-    var errEl2 = $el(errId); if (errEl2) errEl2.textContent = t('err_email_same_as_host');
+    var errEl = $el(errId); if (errEl) errEl.textContent = t('err_email_same_as_host');
     return;
   }
 
-  // Use cache
+  // Cache hit — no repeat network call for the same address
   if (_verifyCache[email] !== undefined) {
     applyBrevoResult(fieldId, errId, badgeId, email, _verifyCache[email]);
     return;
@@ -1251,92 +1250,32 @@ function checkEmailViaBrevo(fieldId, errId, badgeId) {
 
   setVerifyBadge(badgeId, fieldId, 'checking', t('verify_checking'));
 
-  var domain = email.split('@')[1];
-
-  // Step 1: Real MX record check via Google DNS-over-HTTPS
-  // Catches fake domains (xqqx.com, notreal.xyz) — no MX = domain can't receive email
-  fetch('https://dns.google/resolve?name=' + encodeURIComponent(domain) + '&type=MX', {
-    headers: { 'Accept': 'application/dns-json' }
-  })
-  .then(function(res) { return res.json(); })
-  .then(function(dns) {
-    // Status 0 = NOERROR; Answer array present = MX records exist
-    var hasMX = dns && dns.Status === 0 && Array.isArray(dns.Answer) && dns.Answer.length > 0;
-    if (!hasMX) {
-      // No MX records — domain cannot receive email → reject
-      _verifyCache[email] = false;
-      applyBrevoResult(fieldId, errId, badgeId, email, false);
-      return;
-    }
-    // Step 2: DeBounce disposable check — catches throwaway domains
-    return fetch('https://disposable.debounce.io/?email=' + encodeURIComponent(email))
-      .then(function(res) { return res.json(); })
-      .then(function(data) {
-        if (data && data.disposable === 'true') {
-          _verifyCache[email] = false;
-          applyBrevoResult(fieldId, errId, badgeId, email, false);
-          return;
-        }
-        // Step 3: Brevo contact creation — final syntax + domain check
-        return fetch('https://api.brevo.com/v3/contacts', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'api-key': BREVO_API_KEY },
-          body: JSON.stringify({ email: email, listIds: [], updateEnabled: false })
-        })
-        .then(function(res) {
-          if (res.status === 201) {
-            fetch('https://api.brevo.com/v3/contacts/' + encodeURIComponent(email), {
-              method: 'DELETE', headers: { 'api-key': BREVO_API_KEY }
-            }).catch(function(){});
-            _verifyCache[email] = true;
-            applyBrevoResult(fieldId, errId, badgeId, email, true);
-          } else {
-            return res.json().then(function(d) {
-              var ok = (res.status === 400 && d && d.code === 'duplicate_parameter');
-              _verifyCache[email] = ok;
-              applyBrevoResult(fieldId, errId, badgeId, email, ok);
-            });
-          }
-        });
-      });
-  })
-  .catch(function() {
-    // Google DoH blocked/failed — fall back to DeBounce + Brevo
-    fetch('https://disposable.debounce.io/?email=' + encodeURIComponent(email))
-      .then(function(r){ return r.json(); })
-      .then(function(d){
-        if (d && d.disposable === 'true') {
-          _verifyCache[email] = false;
-          applyBrevoResult(fieldId, errId, badgeId, email, false);
-          return;
-        }
-        return fetch('https://api.brevo.com/v3/contacts', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'api-key': BREVO_API_KEY },
-          body: JSON.stringify({ email: email, listIds: [], updateEnabled: false })
-        })
-        .then(function(res) {
-          if (res.status === 201) {
-            fetch('https://api.brevo.com/v3/contacts/' + encodeURIComponent(email), {
-              method: 'DELETE', headers: { 'api-key': BREVO_API_KEY }
-            }).catch(function(){});
-            _verifyCache[email] = true;
-            applyBrevoResult(fieldId, errId, badgeId, email, true);
-          } else {
-            return res.json().then(function(d2) {
-              var ok = (res.status === 400 && d2 && d2.code === 'duplicate_parameter');
-              _verifyCache[email] = ok;
-              applyBrevoResult(fieldId, errId, badgeId, email, ok);
-            });
-          }
-        });
+  // Single call: MX + disposable + syntax — free, no key, ~25 ms
+  fetch('https://rapid-email-verifier.fly.dev/validate?email=' + encodeURIComponent(email))
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+      var ok = data && data.is_valid === true;
+      _verifyCache[email] = ok;
+      applyBrevoResult(fieldId, errId, badgeId, email, ok);
+    })
+    .catch(function() {
+      // Fallback 1: MX check via Google DoH (works outside China)
+      fetch('https://dns.google/resolve?name=' + encodeURIComponent(email.split('@')[1]) + '&type=MX', {
+        headers: { 'Accept': 'application/dns-json' }
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(dns) {
+        var ok = dns && dns.Status === 0 && Array.isArray(dns.Answer) && dns.Answer.length > 0;
+        _verifyCache[email] = ok;
+        applyBrevoResult(fieldId, errId, badgeId, email, ok);
       })
       .catch(function() {
-        var badge = $el(badgeId);
-        if (badge) { badge.className = 'verify-badge checking'; badge.innerHTML = '⚠️ ' + t('verify_failed'); }
-        if (input) input.classList.remove('verified','verifying','error');
+        // Fallback 2: format check only — never block the user on a network failure
+        var ok = /^\S+@\S+\.\S+$/.test(email);
+        _verifyCache[email] = ok;
+        applyBrevoResult(fieldId, errId, badgeId, email, ok);
       });
-  });
+    });
 }
 
 function applyBrevoResult(fieldId, errId, badgeId, email, ok) {
@@ -1444,7 +1383,7 @@ function submitForm() {
     errs.push(t('err_email_same_as_host'));
   }
 
-  // Both emails must pass Brevo verification
+  // Both emails must pass verification
   if (!_verifyDone['fEmail']) {
     var emailEl2 = $el('fEmail'); if (emailEl2) emailEl2.classList.add('error');
     var errEmail2 = $el('err-email'); if (errEmail2) errEmail2.textContent = t('verify_invalid');
@@ -2037,7 +1976,6 @@ function sendResultEmail(score, pass, correct) {
   const correctAnsLabel = isZH ? '正确答案'   : 'Correct Answer';
   const resultLabel     = isZH ? '结果'       : 'Result';
 
-  // ── Email HTML: double quotes in HTML, &quot; conversion at return for Power Apps ──
   const htmlBody = (function(){
     var now = new Date();
     var submittedAt = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0')
@@ -2068,20 +2006,17 @@ function sendResultEmail(score, pass, correct) {
     h += '<body style="font-family:Arial,sans-serif;background:#f5f0ea;margin:0;padding:20px">';
     h += '<div style="max-width:700px;margin:0 auto;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.12)">';
 
-    // Header
     h += '<div style="background:linear-gradient(135deg,#B85A14,#E8920A);padding:28px 32px;text-align:center">';
     h += '<h1 style="color:#fff;font-size:24px;margin:0;letter-spacing:2px;text-transform:uppercase">Duracell DCL</h1>';
     h += '<p style="color:#ffe0b0;margin:6px 0 0;font-size:13px;letter-spacing:1px">' + (isZH ? '访客安全考试结果' : 'Visitor Safety Exam Result') + '</p>';
     h += '</div>';
 
-    // Score badge
     h += '<div style="text-align:center;padding:28px 32px 16px">';
     h += '<div style="display:inline-block;width:96px;height:96px;line-height:96px;border-radius:50%;background:' + resultBg + ';border:3px solid ' + resultColor + ';font-size:28px;font-weight:bold;color:' + resultColor + '">' + score + '%</div>';
     h += '<p style="font-size:22px;font-weight:bold;color:' + resultColor + ';margin:14px 0 4px">' + (pass ? (isZH ? '🎉 通过' : '🎉 PASSED') : (isZH ? '⚠️ 未通过' : '⚠️ FAILED')) + '</p>';
     h += '<p style="color:#888;font-size:13px;margin:0">' + (isZH ? ('答对 ' + correct + '/' + examQuestions.length + ' 题') : (correct + ' of ' + examQuestions.length + ' correct')) + '</p>';
     h += '</div>';
 
-    // Visitor info
     h += '<div style="padding:8px 32px 20px">';
     h += '<p style="font-size:11px;font-weight:bold;color:#B85A14;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid #f0d9c0;padding-bottom:8px;margin-bottom:12px">' + (isZH ? '访客信息' : 'Visitor Information') + '</p>';
     h += '<table style="width:100%;border-collapse:collapse;font-size:13px">';
@@ -2095,7 +2030,6 @@ function sendResultEmail(score, pass, correct) {
     h += row(true,  isZH?'语言':'Language',       isZH?'中文':'English', isZH?'提交时间':'Submitted At', submittedAt);
     h += '</table></div>';
 
-    // Q&A review
     h += '<div style="padding:0 32px 28px">';
     h += '<p style="font-size:11px;font-weight:bold;color:#B85A14;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid #f0d9c0;padding-bottom:8px;margin-bottom:12px">' + reviewLabel + '</p>';
     h += '<table style="width:100%;border-collapse:collapse;font-size:12px">';
@@ -2109,7 +2043,6 @@ function sendResultEmail(score, pass, correct) {
     h += '<tbody>' + qaRows + '</tbody>';
     h += '</table></div>';
 
-    // Footer
     h += '<div style="background:#faf0e8;border-top:1px solid #f0d9c0;padding:14px 32px;text-align:center">';
     h += '<p style="color:#bbb;font-size:11px;margin:0">' + (isZH ? '由金霸王 DCL 访客管理系统自动生成' : 'Auto-generated by Duracell DCL Visitor Management System') + '</p>';
     h += '</div>';
