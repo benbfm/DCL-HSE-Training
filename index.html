@@ -1257,8 +1257,20 @@ function checkEmailViaBrevo(fieldId, errId, badgeId) {
 
   setVerifyBadge(badgeId, fieldId, 'checking', t('verify_checking'));
 
-  // ── PRIMARY: rapid-email-verifier (free, no key, ~25ms, MX + disposable + syntax) ──
-  fetch('https://rapid-email-verifier.fly.dev/validate?email=' + encodeURIComponent(email))
+  // Helper: fetch with a hard timeout via AbortController
+  function fetchWithTimeout(url, options, ms) {
+    var ctrl = new AbortController();
+    var timer = setTimeout(function() { ctrl.abort(); }, ms);
+    return fetch(url, Object.assign({}, options, { signal: ctrl.signal }))
+      .then(function(r) { clearTimeout(timer); return r; })
+      .catch(function(e) { clearTimeout(timer); throw e; });
+  }
+
+  // ── PRIMARY: rapid-email-verifier — 6 s hard timeout ──
+  fetchWithTimeout(
+    'https://rapid-email-verifier.fly.dev/validate?email=' + encodeURIComponent(email),
+    {}, 6000
+  )
     .then(function(res) { return res.json(); })
     .then(function(data) {
       var ok = data && data.is_valid === true;
@@ -1266,11 +1278,13 @@ function checkEmailViaBrevo(fieldId, errId, badgeId) {
       applyBrevoResult(fieldId, errId, badgeId, email, ok);
     })
     .catch(function() {
-      // ── FALLBACK 1: Google DNS-over-HTTPS MX check ──
+      // ── FALLBACK 1: Google DNS-over-HTTPS MX check — 5 s hard timeout ──
       var domain = email.split('@')[1];
-      fetch('https://dns.google/resolve?name=' + encodeURIComponent(domain) + '&type=MX', {
-        headers: { 'Accept': 'application/dns-json' }
-      })
+      fetchWithTimeout(
+        'https://dns.google/resolve?name=' + encodeURIComponent(domain) + '&type=MX',
+        { headers: { 'Accept': 'application/dns-json' } },
+        5000
+      )
       .then(function(r) { return r.json(); })
       .then(function(dns) {
         var ok = dns && dns.Status === 0 && Array.isArray(dns.Answer) && dns.Answer.length > 0;
@@ -1848,7 +1862,7 @@ function startNew() {
     .forEach(id=>{ const el=$el(id); if(el) el.textContent=''; });
   ['vbadge-email','vbadge-host'].forEach(id=>{ const el=$el(id); if(el){ el.className='verify-badge'; el.innerHTML=''; } });
   _verifyCache = {}; _verifyDone = {};
-  Object.values(_verifyTimers).forEach(clearInterval); _verifyTimers = {};
+  Object.values(_verifyTimers).forEach(clearTimeout); _verifyTimers = {};
   const al=$el('form-alert');
   if(al){ al.style.display='none'; $el('form-alert-msg').textContent=''; }
 
